@@ -13,8 +13,7 @@ from vigilo.common.conf import settings
 settings.load_module(__name__)
 
 from vigilo.models.configure import configure_db
-configure_db(settings['database'], 'sqlalchemy_',
-    settings['database']['db_basename'])
+configure_db(settings['database'], 'sqlalchemy_')
 
 from vigilo.common.logging import get_logger
 LOGGER = get_logger(__name__)
@@ -208,7 +207,7 @@ def get_events(minutes_old):
 
 
 class SyncSender(PubSubSender):
-    def __init__(self, to_sync)
+    def __init__(self, to_sync):
         super(SyncSender, self).__init__()
         # pas de trucs compliqués
         self.mas_send_simult = 1
@@ -225,43 +224,35 @@ class SyncSender(PubSubSender):
         replies = []
         for service in self.to_sync:
             message = self._buildNagiosMessage(service)
+            print message
             reply = self.publishXml(message)
+            print reply
             replies.append(reply)
         return defer.DeferredList(replies)
 
     def _buildNagiosMessage(self, service):
-        print service
+        print service, service.hostname, service.servicename
         if service.servicename:
             return self._buildNagiosServiceMessage(service.hostname,
                                                    service.servicename)
         else:
             return self._buildNagiosHostMessage(service.hostname)
 
-    def _buildNagiosServiceMessage(self, host, service):
-        msg = (
-            '<command xmlns="%(namespace)s">'
-                '<timestamp>%(timestamp)d</timestamp>'
-                '<cmdname>SEND_CUSTOM_SVC_NOTIFICATION</cmdname>'
-                '<value>%(host)s;%(service)s;0;vigilo:syncevents</value>'
-            '</command>' % {
-                "namespace": NS_COMMAND,
-                "timestamp": int(time.time()),
-                "host": self.hostname,
-                "service": self.servicename,
-                }
-             )
-    def _buildNagiosHostMessage(self, host):
-        msg = (
-            '<command xmlns="%(namespace)s">'
-                '<timestamp>%(timestamp)d</timestamp>'
-                '<cmdname>SEND_CUSTOM_HOST_NOTIFICATION</cmdname>'
-                '<value>%(host)s;0;vigilo:syncevents</value>'
-            '</command>' % {
-                "namespace": NS_COMMAND,
-                "timestamp": int(time.time()),
-                "host": self.hostname,
-                }
-             )
+    def _buildNagiosServiceMessage(self, hostname, servicename):
+        msg = domish.Element((NS_COMMAND, 'command'))
+        msg.addElement('timestamp', content=str(int(time.time())))
+        msg.addElement('cmdname', content="SEND_CUSTOM_SVC_NOTIFICATION")
+        cmdvalue = "%s;%s;0;vigilo:syncevents" % (hostname, servicename)
+        msg.addElement('value', content=cmdvalue)
+        return msg
+
+    def _buildNagiosHostMessage(self, hostname):
+        msg = domish.Element((NS_COMMAND, 'command'))
+        msg.addElement('timestamp', content=str(int(time.time())))
+        msg.addElement('cmdname', content="SEND_CUSTOM_HOST_NOTIFICATION")
+        cmdvalue = "%s;0;vigilo:syncevents" % hostname
+        msg.addElement('value', content=cmdvalue)
+        return msg
 
     def stop(self):
         self.xmlstream.sendFooter()

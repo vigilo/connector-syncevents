@@ -37,7 +37,7 @@ setup(name='vigilo-connector-syncevents',
         install_requires=[
             'setuptools',
             'vigilo-common',
-            'vigilo-pubsub',
+            'vigilo-connector',
             'vigilo-models',
             ],
         namespace_packages = [
@@ -61,7 +61,7 @@ setup(name='vigilo-connector-syncevents',
         data_files=[
                     (os.path.join(sysconfdir, "vigilo/connector-syncevents"),
                         ["settings.ini"]),
-                    ("/etc/cron.d"), ["pkg/vigilo-connector-syncevents.cron"]),
+                    ("/etc/cron.d", ["pkg/vigilo-connector-syncevents.cron"]),
                    ] + install_i18n("i18n", "/usr/share/locale"),
         )
 

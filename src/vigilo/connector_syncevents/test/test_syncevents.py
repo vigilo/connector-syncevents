@@ -34,7 +34,7 @@ class TestRequest(unittest.TestCase):
 
 
 class DBResult(object):
-    def __init__(self, hostname, servicename)
+    def __init__(self, hostname, servicename):
         self.hostname = hostname
         self.servicename = servicename
 
@@ -44,20 +44,28 @@ class TestSyncSender(unittest.TestCase):
 
     def test_buildHostMessage(self):
         db = DBResult("testhost", None)
-        self.sender = SyncSender()
-        self.assertEqual(self.sender._buildNagiosMessage(db),
-                         "")
+        self.sender = SyncSender(None)
+        result = self.sender._buildNagiosMessage(db)
+        self.assertEqual(result.name, "command")
+        self.assertEqual(result.uri, NS_COMMAND)
+        self.assertEqual(str(result.cmdname),
+                         "SEND_CUSTOM_HOST_NOTIFICATION")
+        self.assertEqual(str(result.value),
+                         "testhost;0;vigilo:syncevents")
 
     def test_buildServiceMessage(self):
         db = DBResult("testhost", "testservice")
-        self.sender = SyncSender()
-        #stub = XmlStreamStub()
-        #self.sender.xmlstream = stub.xmlstream
-        self.assertEqual(self.sender._buildNagiosMessage(db),
-                         "")
+        self.sender = SyncSender(None)
+        result = self.sender._buildNagiosMessage(db)
+        self.assertEqual(result.name, "command")
+        self.assertEqual(result.uri, NS_COMMAND)
+        self.assertEqual(str(result.cmdname),
+                         "SEND_CUSTOM_SVC_NOTIFICATION")
+        self.assertEqual(str(result.value),
+                         "testhost;testservice;0;vigilo:syncevents")
 
-    @deferred(timeout=30)
-    @defer.inlineCallbacks
+    #@deferred(timeout=30)
+    #@defer.inlineCallbacks
     def test_askNagios(self):
         db = DBResult("testhost", "testservice")
         count = 42
@@ -65,7 +73,8 @@ class TestSyncSender(unittest.TestCase):
         self.sender = SyncSender(tosync)
         stub = XmlStreamStub()
         self.sender.xmlstream = stub.xmlstream
-        yield self.sender.askNagios()
+        # pas de yield ci-dessous, les réponses n'arriveront jamais
+        self.sender.askNagios()
         self.assertEqual(len(stub.output), count)
 
 
