@@ -1,19 +1,22 @@
 NAME := connector-syncevents
+USER := vigilo-syncevents
 
-all: build settings.ini
+all: build
 
 include buildenv/Makefile.common
 
-settings.ini: settings.ini.in
-	sed -e 's,@LOCALSTATEDIR@,$(LOCALSTATEDIR),g' \
-		-e 's,@NAGIOSCMDPIPE@,$(NAGIOSCMDPIPE),g' $^ > $@
 
-install: settings.ini $(PYTHON)
+install: install_files install_permissions
+
+install_files: settings.ini $(PYTHON)
 	$(PYTHON) setup.py install --single-version-externally-managed --root=$(DESTDIR) --record=INSTALLED_FILES
 	chmod a+rX -R $(DESTDIR)$(PREFIX)/lib*/python*/*
 
+install_permissions:
+	chgrp $(USER) $(SYSCONFDIR)/vigilo/$(NAME)/settings.ini
+	chmod 640 $(SYSCONFDIR)/vigilo/$(NAME)/settings.ini
+
 clean: clean_python
-	rm -f settings.ini
 
 lint: lint_pylint
 tests: tests_nose

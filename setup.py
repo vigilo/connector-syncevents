@@ -4,7 +4,6 @@ import os, sys
 from setuptools import setup, find_packages
 
 sysconfdir = os.getenv("SYSCONFDIR", "/etc")
-localstatedir = os.getenv("LOCALSTATEDIR", "/var")
 
 tests_require = [
     'coverage',
@@ -62,6 +61,6 @@ setup(name='vigilo-connector-syncevents',
                     (os.path.join(sysconfdir, "vigilo/connector-syncevents"),
                         ["settings.ini"]),
                     ("/etc/cron.d", ["pkg/vigilo-connector-syncevents.cron"]),
-                   ] + install_i18n("i18n", "/usr/share/locale"),
+                   ] + install_i18n("i18n", os.path.join(sys.prefix, "share", "locale")),
         )
 
