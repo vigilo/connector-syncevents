@@ -50,6 +50,8 @@ def get_events(time_limit):
     @return: Liste d'évènements corrélés.
     @rtype: C{list} of C{mixed}
     """
+    LOGGER.debug("Listing events in the database older than %s",
+                 time_limit.strftime("%Y-%m-%d %H:%M:%S"))
 
     lls_correvents = DBSession.query(
         tables.Host.name.label('hostname'),
@@ -90,7 +92,7 @@ def get_events(time_limit):
     try:
         return DBSession.query(correvents).all()
     except (InvalidRequestError, OperationalError), e:
-        LOGGER.exception(_(u'Database exception raised: %s'), e)
+        LOGGER.exception(_('Database exception raised: %s'), e)
         raise e
 
 
@@ -158,7 +160,9 @@ def main():
     time_limit = datetime.now() - timedelta(minutes=int(minutes_old))
     events = get_events(time_limit)
     if not events:
+        LOGGER.debug("No events to synchronize")
         return # rien à faire
+    LOGGER.debug("Found %d event(s) to synchronize", len(events))
 
     xmpp_client = client.client_factory(settings)
     sender = SyncSender(events)
@@ -168,6 +172,7 @@ def main():
     xmpp_client.setServiceParent(application)
     app.startApplication(application, False)
     reactor.run()
+    LOGGER.debug("Done sending notification requests")
 
 
 if __name__ == '__main__':
