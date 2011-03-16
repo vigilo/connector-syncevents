@@ -22,7 +22,7 @@ from vigilo.common.gettext import translate
 _ = translate(__name__)
 
 from twisted.internet import defer
-from twisted.application import service
+from twisted.application import service, app
 from twisted.internet import reactor
 from twisted.python import log
 from twisted.words.protocols.jabber.jid import JID
@@ -106,20 +106,17 @@ class SyncSender(PubSubSender):
     def connectionInitialized(self):
         super(SyncSender, self).connectionInitialized()
         d = self.askNagios()
-        d.addCallback(lambda x: self.stop())
+        d.addCallback(lambda x: self.quit())
 
     def askNagios(self):
         replies = []
         for service in self.to_sync:
             message = self._buildNagiosMessage(service)
-            print message
             reply = self.publishXml(message)
-            print reply
             replies.append(reply)
         return defer.DeferredList(replies)
 
     def _buildNagiosMessage(self, service):
-        print service, service.hostname, service.servicename
         if service.servicename:
             return self._buildNagiosServiceMessage(service.hostname,
                                                    service.servicename)
@@ -142,9 +139,9 @@ class SyncSender(PubSubSender):
         msg.addElement('value', content=cmdvalue)
         return msg
 
-    def stop(self):
+    def quit(self):
         self.xmlstream.sendFooter()
-        reactor.callLater(0.5, reactor.stop)
+        reactor.stop()
 
 
 
@@ -157,16 +154,19 @@ def main():
     try:
         minutes_old = int(settings['connector-syncevents']["minutes_old"])
     except KeyError:
-        minutes_old = 30
+        minutes_old = 35
     time_limit = datetime.now() - timedelta(minutes=int(minutes_old))
     events = get_events(time_limit)
     if not events:
         return # rien à faire
 
     xmpp_client = client.client_factory(settings)
-    sender = PubSubSender(events)
+    sender = SyncSender(events)
     sender.setHandlerParent(xmpp_client)
 
+    application = service.Application('Vigilo state synchronizer')
+    xmpp_client.setServiceParent(application)
+    app.startApplication(application, False)
     reactor.run()
 
 
