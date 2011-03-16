@@ -21,17 +21,6 @@ from vigilo.pubsub.xml import NS_COMMAND
 from vigilo.connector.test.helpers import XmlStreamStub, wait
 
 
-class TestRequest(unittest.TestCase):
-    """
-    Teste la requête de récupération des événements à synchroniser
-    """
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
 
 class DBResult(object):
     def __init__(self, hostname, servicename):
@@ -43,6 +32,7 @@ class TestSyncSender(unittest.TestCase):
     """Teste le connecteur XMPP"""
 
     def test_buildHostMessage(self):
+        """Fonction buildHostMessage"""
         db = DBResult("testhost", None)
         self.sender = SyncSender(None)
         result = self.sender._buildNagiosMessage(db)
@@ -54,6 +44,7 @@ class TestSyncSender(unittest.TestCase):
                          "testhost;0;vigilo:syncevents")
 
     def test_buildServiceMessage(self):
+        """Fonction buildServiceMessage"""
         db = DBResult("testhost", "testservice")
         self.sender = SyncSender(None)
         result = self.sender._buildNagiosMessage(db)
@@ -67,6 +58,7 @@ class TestSyncSender(unittest.TestCase):
     #@deferred(timeout=30)
     #@defer.inlineCallbacks
     def test_askNagios(self):
+        """Fonction askNagios"""
         db = DBResult("testhost", "testservice")
         count = 42
         tosync = [ db for i in range(count) ]
