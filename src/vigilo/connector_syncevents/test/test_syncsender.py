@@ -2,24 +2,15 @@
 """
 Teste le connecteur syncevents
 """
-import os
-import tempfile
-import shutil
 import unittest
 
-# ATTENTION: ne pas utiliser twisted.trial, car nose va ignorer les erreurs
-# produites par ce module !!!
-#from twisted.trial import unittest
-from nose.twistedtools import reactor, deferred
-
-from twisted.internet import defer
-from twisted.words.xish import domish
+from vigilo.pubsub.xml import NS_COMMAND
+from vigilo.connector.test.helpers import XmlStreamStub
 
 from vigilo.connector_syncevents.main import SyncSender
-from vigilo.pubsub.xml import NS_COMMAND
 
-from vigilo.connector.test.helpers import XmlStreamStub, wait
-
+# on a le droit d'accéder aux attributs privés:
+# pylint: disable-msg=W0212
 
 
 class DBResult(object):
@@ -34,8 +25,8 @@ class TestSyncSender(unittest.TestCase):
     def test_buildHostMessage(self):
         """Fonction buildHostMessage"""
         db = DBResult("testhost", None)
-        self.sender = SyncSender(None)
-        result = self.sender._buildNagiosMessage(db)
+        sender = SyncSender(None)
+        result = sender._buildNagiosMessage(db)
         self.assertEqual(result.name, "command")
         self.assertEqual(result.uri, NS_COMMAND)
         self.assertEqual(str(result.cmdname),
@@ -46,8 +37,8 @@ class TestSyncSender(unittest.TestCase):
     def test_buildServiceMessage(self):
         """Fonction buildServiceMessage"""
         db = DBResult("testhost", "testservice")
-        self.sender = SyncSender(None)
-        result = self.sender._buildNagiosMessage(db)
+        sender = SyncSender(None)
+        result = sender._buildNagiosMessage(db)
         self.assertEqual(result.name, "command")
         self.assertEqual(result.uri, NS_COMMAND)
         self.assertEqual(str(result.cmdname),
@@ -62,11 +53,11 @@ class TestSyncSender(unittest.TestCase):
         db = DBResult("testhost", "testservice")
         count = 42
         tosync = [ db for i in range(count) ]
-        self.sender = SyncSender(tosync)
+        sender = SyncSender(tosync)
         stub = XmlStreamStub()
-        self.sender.xmlstream = stub.xmlstream
+        sender.xmlstream = stub.xmlstream
         # pas de yield ci-dessous, les réponses n'arriveront jamais
-        self.sender.askNagios()
+        sender.askNagios()
         self.assertEqual(len(stub.output), count)
 
 

@@ -16,6 +16,8 @@ from vigilo.models.demo import functions as df
 
 from vigilo.connector_syncevents.main import get_events
 
+# désactivation de "Too many public methods"
+# pylint: disable-msg=R0904
 
 class TestRequest(unittest.TestCase):
     """

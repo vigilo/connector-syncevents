@@ -1,11 +1,10 @@
 # vim: set fileencoding=utf-8 sw=4 ts=4 et :
 """
-Ce composant lit les événements en cours dans la base de données, et demande à
-Nagios de renvoyer les états pour les services concernés, afin de garantir la
-synchronicité des deux bases.
+Ce composant lit les événements en cours dans la base de données, et demande
+à Nagios de renvoyer les états pour les services concernés, afin de garantir
+la synchronicité des deux bases.
 """
 
-import sys
 import time
 from datetime import datetime, timedelta
 
@@ -24,16 +23,10 @@ _ = translate(__name__)
 from twisted.internet import defer
 from twisted.application import service, app
 from twisted.internet import reactor
-from twisted.python import log
-from twisted.words.protocols.jabber.jid import JID
 from twisted.words.xish import domish
-from twisted.words.protocols.jabber import xmlstream, sasl
-from wokkel.pubsub import Item, PubSubRequest
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.sql.expression import null as expr_null, union
-from sqlalchemy import or_
 
-from vigilo.pubsub import NodeOwner
 from vigilo.pubsub.xml import NS_COMMAND
 from vigilo.connector import client
 from vigilo.connector.forwarder import PubSubSender
@@ -97,7 +90,17 @@ def get_events(time_limit):
 
 
 class SyncSender(PubSubSender):
+    """
+    Envoi des demandes de synchronisation sur le bus, à destination des serveurs Nagios
+    """
+
     def __init__(self, to_sync):
+        """
+        @param to_sync: Résultats de la requête à la base de données. Chaque
+            résultat doit disposer d'une propriété C{hostname} et d'une
+            propriété C{servicename}
+        @type  to_sync: C{list}
+        """
         super(SyncSender, self).__init__()
         # pas de trucs compliqués
         self.mas_send_simult = 1
@@ -106,26 +109,41 @@ class SyncSender(PubSubSender):
         self.to_sync = to_sync
 
     def connectionInitialized(self):
+        """À la connexion, on envoie les demandes, puis on se déconnecte"""
         super(SyncSender, self).connectionInitialized()
         d = self.askNagios()
         d.addCallback(lambda x: self.quit())
 
     def askNagios(self):
+        """Envoie les demandes de notifications à Nagios"""
         replies = []
-        for service in self.to_sync:
-            message = self._buildNagiosMessage(service)
+        for supitem in self.to_sync:
+            message = self._buildNagiosMessage(supitem)
             reply = self.publishXml(message)
             replies.append(reply)
         return defer.DeferredList(replies)
 
-    def _buildNagiosMessage(self, service):
-        if service.servicename:
-            return self._buildNagiosServiceMessage(service.hostname,
-                                                   service.servicename)
+    def _buildNagiosMessage(self, supitem):
+        """
+        Construit le message de commande Nagios approprié
+        @param supitem: Hôte ou service concerné. Doit disposer d'une propriété
+            C{hostname} et d'une propriété C{servicename}
+        @type  supitem: C{object}
+        """
+        if supitem.servicename:
+            return self._buildNagiosServiceMessage(supitem.hostname,
+                                                   supitem.servicename)
         else:
-            return self._buildNagiosHostMessage(service.hostname)
+            return self._buildNagiosHostMessage(supitem.hostname)
 
     def _buildNagiosServiceMessage(self, hostname, servicename):
+        """
+        Construit un message de demande de notification pour un service Nagios
+        @param hostname: nom d'hôte
+        @type  hostname: C{str}
+        @param servicename: nom de service
+        @type  servicename: C{str}
+        """
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
         msg.addElement('cmdname', content="SEND_CUSTOM_SVC_NOTIFICATION")
@@ -134,6 +152,11 @@ class SyncSender(PubSubSender):
         return msg
 
     def _buildNagiosHostMessage(self, hostname):
+        """
+        Construit un message de demande de notification pour un hôte Nagios
+        @param hostname: nom d'hôte
+        @type  hostname: C{str}
+        """
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
         msg.addElement('cmdname', content="SEND_CUSTOM_HOST_NOTIFICATION")
@@ -142,6 +165,7 @@ class SyncSender(PubSubSender):
         return msg
 
     def quit(self):
+        """Déconnexion du bus et arrêt du connecteur"""
         self.xmlstream.sendFooter()
         reactor.stop()
 
@@ -173,8 +197,4 @@ def main():
     app.startApplication(application, False)
     reactor.run()
     LOGGER.debug("Done sending notification requests")
-
-
-if __name__ == '__main__':
-    main()
 
