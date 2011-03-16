@@ -43,7 +43,7 @@ def get_events(time_limit):
     @return: Liste d'évènements corrélés.
     @rtype: C{list} of C{mixed}
     """
-    LOGGER.debug("Listing events in the database older than %s",
+    LOGGER.info(_("Listing events in the database older than %s"),
                  time_limit.strftime("%Y-%m-%d %H:%M:%S"))
 
     lls_correvents = DBSession.query(
@@ -114,14 +114,12 @@ class SyncSender(PubSubSender):
         d = self.askNagios()
         d.addCallback(lambda x: self.quit())
 
+    @defer.inlineCallbacks
     def askNagios(self):
         """Envoie les demandes de notifications à Nagios"""
-        replies = []
         for supitem in self.to_sync:
             message = self._buildNagiosMessage(supitem)
-            reply = self.publishXml(message)
-            replies.append(reply)
-        return defer.DeferredList(replies)
+            yield self.publishXml(message)
 
     def _buildNagiosMessage(self, supitem):
         """
@@ -131,9 +129,15 @@ class SyncSender(PubSubSender):
         @type  supitem: C{object}
         """
         if supitem.servicename:
+            LOGGER.info(_("Asking update for service \"%(service)s\" "
+                          "on host \"%(host)s\""),
+                        {"host": supitem.hostname,
+                         "service": supitem.servicename})
             return self._buildNagiosServiceMessage(supitem.hostname,
                                                    supitem.servicename)
         else:
+            LOGGER.info(_("Asking update for host \"%(host)s\""),
+                        {"host": supitem.hostname})
             return self._buildNagiosHostMessage(supitem.hostname)
 
     def _buildNagiosServiceMessage(self, hostname, servicename):
@@ -147,7 +151,7 @@ class SyncSender(PubSubSender):
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
         msg.addElement('cmdname', content="SEND_CUSTOM_SVC_NOTIFICATION")
-        cmdvalue = "%s;%s;0;vigilo:syncevents" % (hostname, servicename)
+        cmdvalue = "%s;%s;0;vigilo;syncevents" % (hostname, servicename)
         msg.addElement('value', content=cmdvalue)
         return msg
 
@@ -160,7 +164,7 @@ class SyncSender(PubSubSender):
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
         msg.addElement('cmdname', content="SEND_CUSTOM_HOST_NOTIFICATION")
-        cmdvalue = "%s;0;vigilo:syncevents" % hostname
+        cmdvalue = "%s;0;vigilo;syncevents" % hostname
         msg.addElement('value', content=cmdvalue)
         return msg
 
@@ -184,11 +188,12 @@ def main():
     time_limit = datetime.now() - timedelta(minutes=int(minutes_old))
     events = get_events(time_limit)
     if not events:
-        LOGGER.debug("No events to synchronize")
+        LOGGER.info(_("No events to synchronize"))
         return # rien à faire
-    LOGGER.debug("Found %d event(s) to synchronize", len(events))
+    LOGGER.info(_("Found %d event(s) to synchronize"), len(events))
 
     xmpp_client = client.client_factory(settings)
+    xmpp_client.factory.noisy = False
     sender = SyncSender(events)
     sender.setHandlerParent(xmpp_client)
 
@@ -196,5 +201,5 @@ def main():
     xmpp_client.setServiceParent(application)
     app.startApplication(application, False)
     reactor.run()
-    LOGGER.debug("Done sending notification requests")
+    LOGGER.info(_("Done sending notification requests"))
 

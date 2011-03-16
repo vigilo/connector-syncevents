@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: vigilo-connector-syncevents 2.0.0\n"
 "Report-Msgid-Bugs-To: contact@projet-vigilo.org\n"
 "POT-Creation-Date: 2011-03-15 22:53+0100\n"
-"PO-Revision-Date: 2011-03-15 22:56+0100\n"
+"PO-Revision-Date: 2011-03-16 18:07+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n > 1)\n"
@@ -18,8 +18,38 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.4\n"
 
-#: src/vigilo/connector_syncevents/main.py:100
+#: src/vigilo/connector_syncevents/main.py:46
+#, python-format
+msgid "Listing events in the database older than %s"
+msgstr "Récupération des évènements plus vieux que %s dans la base de données"
+
+#: src/vigilo/connector_syncevents/main.py:88
 #, python-format
 msgid "Database exception raised: %s"
 msgstr "Exception dans la base de données : %s"
+
+#: src/vigilo/connector_syncevents/main.py:132
+#, python-format
+msgid "Asking update for service \"%(service)s\" on host \"%(host)s\""
+msgstr ""
+"Demande d'une mise à jour poue le service \"%(service)s\" sur l'hôte "
+"\"%(host)s\""
+
+#: src/vigilo/connector_syncevents/main.py:139
+#, python-format
+msgid "Asking update for host \"%(host)s\""
+msgstr "Demande d'une mise à jour poue l'hôte \"%(host)s\""
+
+#: src/vigilo/connector_syncevents/main.py:191
+msgid "No events to synchronize"
+msgstr "Pas d'évènement à synchroniser"
+
+#: src/vigilo/connector_syncevents/main.py:193
+#, python-format
+msgid "Found %d event(s) to synchronize"
+msgstr "Il y a %d évènements à synchroniser"
+
+#: src/vigilo/connector_syncevents/main.py:204
+msgid "Done sending notification requests"
+msgstr "Demandes de notification envoyées"
 

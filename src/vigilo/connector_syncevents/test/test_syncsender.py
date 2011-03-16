@@ -32,7 +32,7 @@ class TestSyncSender(unittest.TestCase):
         self.assertEqual(str(result.cmdname),
                          "SEND_CUSTOM_HOST_NOTIFICATION")
         self.assertEqual(str(result.value),
-                         "testhost;0;vigilo:syncevents")
+                         "testhost;0;vigilo;syncevents")
 
     def test_buildServiceMessage(self):
         """Fonction buildServiceMessage"""
@@ -44,7 +44,7 @@ class TestSyncSender(unittest.TestCase):
         self.assertEqual(str(result.cmdname),
                          "SEND_CUSTOM_SVC_NOTIFICATION")
         self.assertEqual(str(result.value),
-                         "testhost;testservice;0;vigilo:syncevents")
+                         "testhost;testservice;0;vigilo;syncevents")
 
     #@deferred(timeout=30)
     #@defer.inlineCallbacks
