@@ -4,6 +4,11 @@ Teste le connecteur syncevents
 """
 import unittest
 
+# ATTENTION: ne pas utiliser twisted.trial, car nose va ignorer les erreurs
+# produites par ce module !!!
+#from twisted.trial import unittest
+from nose.twistedtools import reactor, deferred
+
 from vigilo.pubsub.xml import NS_COMMAND
 from vigilo.connector.test.helpers import XmlStreamStub
 
@@ -58,6 +63,7 @@ class TestSyncSender(unittest.TestCase):
         sender.xmlstream = stub.xmlstream
         # pas de yield ci-dessous, les réponses n'arriveront jamais
         sender.askNagios()
+        stub.send_replies()
         self.assertEqual(len(stub.output), count)
 
 
