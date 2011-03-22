@@ -25,7 +25,14 @@ class TestRequest(unittest.TestCase):
     """
 
     def setUp(self):
-        metadata.create_all()
+        # La vue GroupPath dépend de Group et GroupHierarchy.
+        # SQLAlchemy ne peut pas détecter correctement la dépendance.
+        # On crée le schéma en 2 fois pour contourner ce problème.
+        mapped_tables = metadata.tables.copy()
+        del mapped_tables[tables.grouppath.GroupPath.__tablename__]
+        metadata.create_all(tables=mapped_tables.itervalues())
+        metadata.create_all(tables=[tables.grouppath.GroupPath.__table__])
+
         DBSession.add(tables.StateName(statename=u'OK', order=1))
         DBSession.add(tables.StateName(statename=u'UNKNOWN', order=2))
         DBSession.add(tables.StateName(statename=u'WARNING', order=3))
@@ -234,4 +241,3 @@ class TestRequest(unittest.TestCase):
         results = get_events(now)
         print results
         self.assertEqual(len(results), 0)
-
