@@ -67,7 +67,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_sysconfdir}/vigilo/
 %dir %{_sysconfdir}/vigilo/%{module}
 %attr(640,root,vigilo-syncevents) %config(noreplace) %{_sysconfdir}/vigilo/%{module}/settings.ini
-%attr(644,root,root) %{_sysconfdir}/cron.d/*
+%attr(644,root,root) %config(noreplace) %{_sysconfdir}/cron.d/*
 %{python26_sitelib}/*
 
 
