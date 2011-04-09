@@ -1,14 +1,11 @@
-%define module  connector-syncevents
-%define name    vigilo-%{module}
-%define version 2.0.0
-%define release 1%{?svn}%{?dist}
+%define module  @SHORT_NAME@
 
-Name:       %{name}
-Summary:    Vigilo events syncer
-Version:    %{version}
-Release:    %{release}
+Name:       vigilo-%{module}
+Summary:    @SUMMARY@
+Version:    @VERSION@
+Release:    1%{?svn}%{?dist}
 Source0:    %{name}-%{version}.tar.gz
-URL:        http://www.projet-vigilo.org
+URL:        @URL@
 Group:      System/Servers
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-build
 License:    GPLv2
@@ -18,13 +15,15 @@ BuildRequires:   python-distribute
 BuildRequires:   python-babel
 
 Requires:   python-distribute
-Requires:   vigilo-common vigilo-connector vigilo-models
+Requires:   vigilo-common
+Requires:   vigilo-connector
+Requires:   vigilo-models
 
 Requires(pre): shadow-utils
 
 
 %description
-Update event states in the Vigilo database by asking Nagios.
+@DESCRIPTION@
 This application is part of the Vigilo Project <http://vigilo-project.org>
 
 

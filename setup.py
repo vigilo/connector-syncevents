@@ -31,7 +31,9 @@ setup(name='vigilo-connector-syncevents',
         author='Vigilo Team',
         author_email='contact@projet-vigilo.org',
         url='http://www.projet-vigilo.org/',
-        description='Vigilo component to sync events with Nagios',
+        description="Vigilo events syncer",
+        long_description="Update event states in the Vigilo database "
+                         "by asking Nagios.",
         license='http://www.gnu.org/licenses/gpl-2.0.html',
         install_requires=[
             'setuptools',
