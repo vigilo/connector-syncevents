@@ -7,7 +7,7 @@ import unittest
 # ATTENTION: ne pas utiliser twisted.trial, car nose va ignorer les erreurs
 # produites par ce module !!!
 #from twisted.trial import unittest
-from nose.twistedtools import reactor, deferred
+from nose.twistedtools import reactor, deferred # pylint: disable-msg=W0611
 
 from vigilo.pubsub.xml import NS_COMMAND
 from vigilo.connector.test.helpers import XmlStreamStub
@@ -57,7 +57,7 @@ class TestSyncSender(unittest.TestCase):
         """Fonction askNagios"""
         db = DBResult("testhost", "testservice")
         count = 42
-        tosync = [ db for i in range(count) ]
+        tosync = [ db for _i in range(count) ]
         sender = SyncSender(tosync)
         stub = XmlStreamStub()
         sender.xmlstream = stub.xmlstream
