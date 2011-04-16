@@ -55,13 +55,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}.lang
 %defattr(644,root,root,755)
-%doc COPYING
+%doc COPYING.txt
 %attr(755,root,root) %{_bindir}/*
 %dir %{_sysconfdir}/vigilo/
 %dir %{_sysconfdir}/vigilo/%{module}
 %attr(640,root,vigilo-syncevents) %config(noreplace) %{_sysconfdir}/vigilo/%{module}/settings.ini
 %attr(644,root,root) %config(noreplace) %{_sysconfdir}/cron.d/*
-%{python_sitelib}/*
+%{python_sitelib}/vigilo*
 
 
 %changelog
