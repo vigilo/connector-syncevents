@@ -24,3 +24,5 @@ lint: lint_pylint
 tests: tests_nose
 
 .PHONY: install_pkg install_python install_python_pkg install_data install_permissions
+
+# vim: set noexpandtab :
