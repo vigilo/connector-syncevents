@@ -38,6 +38,7 @@ setup(name='vigilo-connector-syncevents',
         long_description="Update event states in the Vigilo database "
                          "by asking Nagios.",
         license='http://www.gnu.org/licenses/gpl-2.0.html',
+        zip_safe=False, # pour pouvoir écrire le dropin.cache de twisted
         install_requires=[
             'setuptools',
             'vigilo-common',
