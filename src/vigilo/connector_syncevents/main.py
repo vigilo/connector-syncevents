@@ -49,7 +49,21 @@ def get_events(time_limit):
     LOGGER.info(_("Listing events in the database older than %s"),
                  time_limit.strftime("%Y-%m-%d %H:%M:%S"))
 
-    lls_correvents = DBSession.query(
+    # On récupère d'abord les hôtes DOWN pour pouvoir ne remonter que les
+    # services désynchronisés sur les hôtes UP (#727)
+    hosts_down = DBSession.query(
+        tables.Host.idhost,
+    ).join(
+        (tables.State,
+            tables.State.idsupitem == tables.Host.idhost),
+        (tables.StateName,
+            tables.StateName.idstatename == tables.State.state),
+    ).filter(
+        tables.StateName.statename == u"DOWN",
+    )
+
+    # On récupère les services à synchroniser
+    lls_to_update = DBSession.query(
         tables.Host.name.label('hostname'),
         tables.LowLevelService.servicename.label('servicename'),
     ).join(
@@ -63,10 +77,14 @@ def get_events(time_limit):
         tables.StateName.statename.in_([u"CRITICAL", u"WARNING", u"UNKNOWN"]),
     ).filter(
         tables.State.timestamp <= time_limit,
+    ).filter(
+        ~tables.Host.idhost.in_(hosts_down)
     )
 
-    host_correvents = DBSession.query(
+    # On récupère les hôtes à synchroniser
+    host_to_update = DBSession.query(
         tables.Host.name.label('hostname'),
+        # pour faire une UNION il faut le même nombre de colonnes
         expr_null().label('servicename'),
     ).join(
         (tables.State,
@@ -79,14 +97,14 @@ def get_events(time_limit):
         tables.State.timestamp <= time_limit,
     )
 
-    correvents = union(
-        lls_correvents,
-        host_correvents,
+    to_update = union(
+        lls_to_update,
+        host_to_update,
         correlate=False
     ).alias()
 
     try:
-        return DBSession.query(correvents).all()
+        return DBSession.query(to_update).all()
     except (InvalidRequestError, OperationalError), e:
         LOGGER.exception(_('Database exception raised: %s'), e)
         raise e

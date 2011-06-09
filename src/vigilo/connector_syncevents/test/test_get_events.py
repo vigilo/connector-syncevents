@@ -247,3 +247,24 @@ class TestRequest(unittest.TestCase):
         results = get_events(now)
         print results
         self.assertEqual(len(results), 0)
+
+    def test_service_when_host_down(self):
+        """Évènements vieux sur un service dont l'hôte est DOWN"""
+        host = df.add_host("testhost")
+        svc = df.add_lowlevelservice(host, "testsvc")
+        now = datetime.now()
+        age = now - timedelta(minutes=21)
+        time_limit = now - timedelta(minutes=20)
+        DBSession.merge(tables.State(
+                idsupitem=host.idhost,
+                state=tables.StateName.statename_to_value(u"DOWN"),
+                timestamp=now))
+        DBSession.merge(tables.State(
+                idsupitem=svc.idservice,
+                state=tables.StateName.statename_to_value(u"UNKNOWN"),
+                timestamp=age))
+        DBSession.flush()
+        results = get_events(time_limit)
+        print results
+        self.assertEqual(len(results), 0)
+
