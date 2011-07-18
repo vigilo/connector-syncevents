@@ -37,12 +37,14 @@ from vigilo.models.session import DBSession
 from vigilo.models import tables
 
 
-def get_events(time_limit):
+def get_events(time_limit, max_events=0):
     """
     Retourne les événements corrélés plus récents que L{time_limit}.
 
     @param time_limit: Date après laquelle on ignore les évènements.
     @type  time_limit: C{datetime.datetime}
+    @param max_events: Nombre maximum d'événements.
+    @type  max_events: C{int}
     @return: Liste d'évènements corrélés.
     @rtype: C{list} of C{mixed}
     """
@@ -101,10 +103,13 @@ def get_events(time_limit):
         lls_to_update,
         host_to_update,
         correlate=False
-    ).alias()
+    )
+
+    if max_events:
+        to_update = to_update.limit(max_events)
 
     try:
-        return DBSession.query(to_update).all()
+        return DBSession.query(to_update.alias()).all()
     except (InvalidRequestError, OperationalError), e:
         LOGGER.exception(_('Database exception raised: %s'), e)
         raise e
@@ -212,7 +217,11 @@ def main():
     except KeyError:
         minutes_old = 35
     time_limit = datetime.now() - timedelta(minutes=int(minutes_old))
-    events = get_events(time_limit)
+    try:
+        max_events = int(settings['connector-syncevents']["max_events"])
+    except KeyError:
+        max_events = 0
+    events = get_events(time_limit, max_events)
     if not events:
         LOGGER.info(_("No events to synchronize"))
         return # rien à faire

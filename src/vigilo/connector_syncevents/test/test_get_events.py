@@ -268,3 +268,17 @@ class TestRequest(unittest.TestCase):
         print results
         self.assertEqual(len(results), 0)
 
+    def test_above_max_events(self):
+        """Trop d'événements à synchroniser"""
+        now = datetime.now()
+        age = now - timedelta(minutes=42)
+        for i in range(10):
+            host = df.add_host("testhost%d" % i)
+            DBSession.merge(tables.State(
+                    idsupitem=host.idhost,
+                    state=tables.StateName.statename_to_value(u"DOWN"),
+                    timestamp=age))
+        DBSession.flush()
+        results = get_events(now, 2)
+        print results
+        self.assertEqual(len(results), 2)
