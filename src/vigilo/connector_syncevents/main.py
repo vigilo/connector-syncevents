@@ -37,20 +37,18 @@ from vigilo.models.session import DBSession
 from vigilo.models import tables
 
 
-def get_events(time_limit, max_events=0):
+def get_old_services(time_limit):
     """
-    Retourne les événements corrélés plus récents que L{time_limit}.
+    Récupère les services à synchroniser
 
-    @param time_limit: Date après laquelle on ignore les évènements.
-    @type  time_limit: C{datetime.datetime}
-    @param max_events: Nombre maximum d'événements.
-    @type  max_events: C{int}
-    @return: Liste d'évènements corrélés.
-    @rtype: C{list} of C{mixed}
+    On configure Nagios pour renvoyer l'état des services non-OK toutes les X
+    minutes. L'état est alors mis à jour dans la base. Donc si on trouve un
+    état dans la base qui n'a pas été mis à jour il y a moins de X minutes,
+    c'est potentiellement un message perdu, donc un service à re-synchroniser.
+
+    Attention par contre, si l'hôte est down Nagios n'enverra pas de mise à
+    jours pour les services de cet hôte. Il faut donc exclure ces services.
     """
-    LOGGER.info(_("Listing events in the database older than %s"),
-                 time_limit.strftime("%Y-%m-%d %H:%M:%S"))
-
     # On récupère d'abord les hôtes DOWN pour pouvoir ne remonter que les
     # services désynchronisés sur les hôtes UP (#727)
     hosts_down = DBSession.query(
@@ -64,7 +62,6 @@ def get_events(time_limit, max_events=0):
         tables.StateName.statename == u"DOWN",
     )
 
-    # On récupère les services à synchroniser
     lls_to_update = DBSession.query(
         tables.Host.name.label('hostname'),
         tables.LowLevelService.servicename.label('servicename'),
@@ -82,9 +79,16 @@ def get_events(time_limit, max_events=0):
     ).filter(
         ~tables.Host.idhost.in_(hosts_down)
     )
+    return lls_to_update
 
-    # On récupère les hôtes à synchroniser
-    host_to_update = DBSession.query(
+def get_old_hosts(time_limit):
+    """
+    Récupère les hôtes à synchroniser.
+
+    Voir le commentaire précédent sur les service pour le critère de
+    désynchronisation. La situation est similaire pour les hôtes.
+    """
+    return DBSession.query(
         tables.Host.name.label('hostname'),
         # pour faire une UNION il faut le même nombre de colonnes
         expr_null().label('servicename'),
@@ -99,9 +103,63 @@ def get_events(time_limit, max_events=0):
         tables.State.timestamp <= time_limit,
     )
 
+def get_desync_event_services():
+    """
+    Récupère les services dont l'état et les événements sont désynchronisés
+    """
+    return DBSession.query(
+        tables.Host.name.label('hostname'),
+        tables.LowLevelService.servicename.label('servicename'),
+    ).join(
+        (tables.LowLevelService,
+            tables.LowLevelService.idhost == tables.Host.idsupitem),
+        (tables.State,
+            tables.State.idsupitem == tables.LowLevelService.idservice),
+        (tables.Event,
+            tables.Event.idsupitem == tables.State.idsupitem),
+    ).filter(
+        tables.State.state != tables.Event.current_state
+    )
+
+def get_desync_event_hosts():
+    """
+    Récupère les hôtes dont l'état et les événements sont désynchronisés
+    """
+    return DBSession.query(
+        tables.Host.name.label('hostname'),
+        # pour faire une UNION il faut le même nombre de colonnes
+        expr_null().label('servicename'),
+    ).join(
+        (tables.State,
+            tables.State.idsupitem == tables.Host.idhost),
+        (tables.Event,
+            tables.Event.idsupitem == tables.State.idsupitem),
+    ).filter(
+        tables.State.state != tables.Event.current_state
+    )
+
+def get_desync(time_limit, max_events=0):
+    """
+    Retourne les hôtes/services à synchroniser.
+
+    @param time_limit: Date après laquelle on ignore les évènements.
+    @type  time_limit: C{datetime.datetime}
+    @param max_events: Nombre maximum d'éléments.
+    @type  max_events: C{int}
+    @return: Liste d'hôtes/services à synchroniser
+    @rtype: C{list} of C{mixed}
+    """
+    LOGGER.info(_("Listing events in the database older than %s"),
+                 time_limit.strftime("%Y-%m-%d %H:%M:%S"))
+
+    lls_old = get_old_services(time_limit)
+    hosts_old = get_old_hosts(time_limit)
+    lls_events = get_desync_event_services()
+    hosts_events = get_desync_event_hosts()
+
     to_update = union(
-        lls_to_update,
-        host_to_update,
+        lls_old, hosts_old,
+        lls_events, hosts_events,
         correlate=False
     )
 
@@ -221,7 +279,7 @@ def main():
         max_events = int(settings['connector-syncevents']["max_events"])
     except KeyError:
         max_events = 0
-    events = get_events(time_limit, max_events)
+    events = get_desync(time_limit, max_events)
     if not events:
         LOGGER.info(_("No events to synchronize"))
         return # rien à faire

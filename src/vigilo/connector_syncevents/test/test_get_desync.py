@@ -17,7 +17,7 @@ from vigilo.models.session import DBSession, metadata
 from vigilo.models import tables
 from vigilo.models.demo import functions as df
 
-from vigilo.connector_syncevents.main import get_events
+from vigilo.connector_syncevents.main import get_desync
 
 # désactivation de "Too many public methods"
 # pylint: disable-msg=R0904
@@ -56,7 +56,7 @@ class TestRequest(unittest.TestCase):
     def test_no_events(self):
         """Pas d'évènements"""
         time_limit = datetime.now() - timedelta(minutes=42)
-        self.assertEqual(get_events(time_limit), [])
+        self.assertEqual(get_desync(time_limit), [])
 
     def test_age_younger_host(self):
         """Évènements trop récents sur un hôte"""
@@ -69,7 +69,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"DOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         self.assertEqual(len(results), 0)
 
     def test_age_equal_host(self):
@@ -83,7 +83,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"DOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
@@ -99,7 +99,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"DOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
@@ -116,7 +116,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"CRITICAL"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         print results
         self.assertEqual(len(results), 0)
 
@@ -132,7 +132,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"CRITICAL"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
@@ -149,7 +149,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"CRITICAL"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -165,7 +165,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"DOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -180,7 +180,7 @@ class TestRequest(unittest.TestCase):
                 idsupitem=host.idhost,
                 state=tables.StateName.statename_to_value(u"UP"),
                 timestamp=age))
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 0)
 
@@ -194,7 +194,7 @@ class TestRequest(unittest.TestCase):
                 idsupitem=svc.idservice,
                 state=tables.StateName.statename_to_value(u"CRITICAL"),
                 timestamp=age))
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -211,7 +211,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"WARNING"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -228,7 +228,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"UNKNOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -244,7 +244,7 @@ class TestRequest(unittest.TestCase):
                 idsupitem=svc.idservice,
                 state=tables.StateName.statename_to_value(u"OK"),
                 timestamp=age))
-        results = get_events(now)
+        results = get_desync(now)
         print results
         self.assertEqual(len(results), 0)
 
@@ -264,7 +264,7 @@ class TestRequest(unittest.TestCase):
                 state=tables.StateName.statename_to_value(u"UNKNOWN"),
                 timestamp=age))
         DBSession.flush()
-        results = get_events(time_limit)
+        results = get_desync(time_limit)
         print results
         self.assertEqual(len(results), 0)
 
@@ -279,6 +279,46 @@ class TestRequest(unittest.TestCase):
                     state=tables.StateName.statename_to_value(u"DOWN"),
                     timestamp=age))
         DBSession.flush()
-        results = get_events(now, 2)
+        results = get_desync(now, 2)
         print results
         self.assertEqual(len(results), 2)
+
+    def test_events_service(self):
+        host = df.add_host("testhost")
+        svc = df.add_lowlevelservice(host, "testsvc")
+        DBSession.merge(tables.State(
+                idsupitem=svc.idservice,
+                state=tables.StateName.statename_to_value(u"WARNING")
+                ))
+        DBSession.merge(tables.Event(
+                idsupitem=svc.idservice,
+                current_state=tables.StateName.statename_to_value(u"CRITICAL"),
+                timestamp=datetime.now(),
+                message=u"dummy",
+                ))
+        DBSession.flush()
+        results = get_desync(datetime.now() - timedelta(minutes=42))
+        print results
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].hostname, "testhost")
+        self.assertEqual(results[0].servicename, "testsvc")
+
+    def test_events_hosts(self):
+        host = df.add_host("testhost")
+        DBSession.merge(tables.State(
+                idsupitem=host.idhost,
+                state=tables.StateName.statename_to_value(u"OK")
+                ))
+        DBSession.merge(tables.Event(
+                idsupitem=host.idhost,
+                current_state=tables.StateName.statename_to_value(u"DOWN"),
+                timestamp=datetime.now(),
+                message=u"dummy",
+                ))
+        DBSession.flush()
+        results = get_desync(datetime.now() - timedelta(minutes=42))
+        print results
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].hostname, "testhost")
+        self.assertEqual(results[0].servicename, None)
+
