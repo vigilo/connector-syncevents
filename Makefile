@@ -22,6 +22,7 @@ clean: clean_python
 
 lint: lint_pylint
 tests: tests_nose
+doc: apidoc
 
 .PHONY: install_pkg install_python install_python_pkg install_data install_permissions
 
