@@ -1,6 +1,6 @@
-######################
-Vigilo connector-metro
-######################
+###########################
+Vigilo connector-syncevents
+###########################
 
 Le module connector-syncevents a pour fonction d'envoyer de re-synchroniser les
 états de Nagios avec ceux de Vigilo dans le cas où des messages d'événements
