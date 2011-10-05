@@ -191,8 +191,6 @@ class SyncSender(PubSubSender):
         self.batch_send_perf = 1
         # ce qu'il faut envoyer
         self.to_sync = to_sync
-        # ne pas spammer les logs
-        self._max_log_each = 50
 
     def connectionInitialized(self):
         """À la connexion, on envoie les demandes, puis on se déconnecte"""
@@ -203,12 +201,11 @@ class SyncSender(PubSubSender):
     @defer.inlineCallbacks
     def askNagios(self):
         """Envoie les demandes de notifications à Nagios"""
-        log_each = len(self.to_sync) < self._max_log_each
         for supitem in self.to_sync:
-            message = self._buildNagiosMessage(supitem, log_each)
+            message = self._buildNagiosMessage(supitem)
             yield self.publishXml(message)
 
-    def _buildNagiosMessage(self, supitem, do_log):
+    def _buildNagiosMessage(self, supitem):
         """
         Construit le message de commande Nagios approprié
         @param supitem: Hôte ou service concerné. Doit disposer d'une propriété
@@ -216,17 +213,15 @@ class SyncSender(PubSubSender):
         @type  supitem: C{object}
         """
         if supitem.servicename:
-            if do_log:
-                LOGGER.info(_("Asking update for service \"%(service)s\" "
-                              "on host \"%(host)s\""),
-                            {"host": supitem.hostname,
-                             "service": supitem.servicename})
+            LOGGER.debug(_("Asking update for service \"%(service)s\" "
+                           "on host \"%(host)s\""),
+                         {"host": supitem.hostname,
+                          "service": supitem.servicename})
             return self._buildNagiosServiceMessage(supitem.hostname,
                                                    supitem.servicename)
         else:
-            if do_log:
-                LOGGER.info(_("Asking update for host \"%(host)s\""),
-                            {"host": supitem.hostname})
+            LOGGER.debug(_("Asking update for host \"%(host)s\""),
+                         {"host": supitem.hostname})
             return self._buildNagiosHostMessage(supitem.hostname)
 
     def _buildNagiosServiceMessage(self, hostname, servicename):

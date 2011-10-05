@@ -34,7 +34,7 @@ class TestSyncSender(unittest.TestCase):
         """Fonction buildHostMessage"""
         db = DBResult("testhost", None)
         sender = SyncSender(None)
-        result = sender._buildNagiosMessage(db, do_log=False)
+        result = sender._buildNagiosMessage(db)
         self.assertEqual(result.name, "command")
         self.assertEqual(result.uri, NS_COMMAND)
         self.assertEqual(str(result.cmdname),
@@ -46,7 +46,7 @@ class TestSyncSender(unittest.TestCase):
         """Fonction buildServiceMessage"""
         db = DBResult("testhost", "testservice")
         sender = SyncSender(None)
-        result = sender._buildNagiosMessage(db, do_log=False)
+        result = sender._buildNagiosMessage(db)
         self.assertEqual(result.name, "command")
         self.assertEqual(result.uri, NS_COMMAND)
         self.assertEqual(str(result.cmdname),
