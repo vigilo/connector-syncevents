@@ -173,13 +173,5 @@ Annexes
 
 .. include:: ../../connector/doc/glossaire.rst
 
-URL
-    Uniform Resource Locator. Chaîne de caractères permettant d'identifier une
-    ressource sur Internet.
-
-SGBD
-    Système de Gestion de Base de Données. Logiciel permettant d'héberger une
-    base de données sur la machine.
-
 
 .. vim: set tw=79 :
