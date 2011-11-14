@@ -30,6 +30,7 @@ from twisted.words.xish import domish
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.sql.expression import null as expr_null, union
 
+from vigilo.common.lock import grab_lock
 from vigilo.pubsub.xml import NS_COMMAND
 from vigilo.connector import client
 from vigilo.connector.forwarder import PubSubSender
@@ -263,6 +264,10 @@ def main():
     """
     Fonction principale
     """
+    # Lock
+    lockfile = settings["connector-syncevents"].get("lockfile",
+                        "/var/lock/vigilo-connector-syncevents/lock")
+    grab_lock(lockfile)
     # Récupération des événements corrélés dont la priorité et la
     # durée de consolidation sont supérieures à celles configurées.
     try:
