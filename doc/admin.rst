@@ -25,26 +25,26 @@ connecteur.
 Installation du paquet RPM
 --------------------------
 L'installation du connecteur se fait en installant simplement le paquet RPM
-« vigilo-connector-metro ». La procédure exacte d'installation dépend du
+« vigilo-connector-syncevents ». La procédure exacte d'installation dépend du
 gestionnaire de paquets utilisé. Les instructions suivantes décrivent la
 procédure pour les gestionnaires de paquets RPM les plus fréquemment
 rencontrés.
 
-Installation à l'aide de urpmi::
+Installation à l'aide de urpmi ::
 
     urpmi vigilo-connector-syncevents
 
-Installation à l'aide de yum::
+Installation à l'aide de yum ::
 
     yum install vigilo-connector-syncevents
 
 Création du compte XMPP
 -----------------------
-Le connector-metro nécessite qu'un compte soit créé sur la machine hébergeant
+Le connector-syncevents nécessite qu'un compte soit créé sur la machine hébergeant
 le bus XMPP pour le composant.
 
 Les comptes doivent être créés sur la machine qui héberge le serveur ejabberd,
-à l'aide de la commande::
+à l'aide de la commande ::
 
     $ su ejabberd -c \
         'ejabberdctl register connector-syncevents localhost connector-syncevents'
@@ -59,8 +59,8 @@ fonctionnement de la solution.
 Configuration
 =============
 
-Le module connector-metro est fourni avec un fichier de configuration situé
-par défaut dans ``/etc/vigilo/connector-syncevents/settings.ini``.
+Le module connector-syncevents est fourni avec un fichier de configuration
+situé par défaut dans ``/etc/vigilo/connector-syncevents/settings.ini``.
 
 .. include:: ../../connector/doc/admin-conf-1.rst
 
@@ -81,20 +81,51 @@ database
 
 Configuration spécifique au connecteur syncevents
 -------------------------------------------------
-Le connecteur syncevents dispose d'une seule option de configuration :
-« minutes_old ». Cette option détermine l'âge minimum d'une alerte en minutes,
+
+Le connecteur syncevents dispose de quelques options de configuration
+spécifiques, détaillées ci-dessous.
+
+Seuil pour l'envoi de demandes d'état
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+L'option ``minutes_old`` détermine l'âge minimum d'une alerte (en minutes),
 au-dessous duquel on ne demande pas de mise à jour à Nagios. Vigilo configure
-Nagios pour qu'il ré-envoie les notifications après 30 minutes, il faut donc
-régler ici une valeur légèrement supérieure, pour ne cibler que les états
-désynchronisés.
+Nagios pour que des notifications soient réémises toutes les 30 minutes,
+il faut donc régler ici une valeur légèrement supérieure, pour ne cibler
+que les états désynchronisés.
 
 La valeur par défaut est 35 minutes.
 
-Si cette valeur ou la fréquence des ré-expéditions de notifications dans Nagios
-doivent être modifiées, il faut faire attention à toujours garder les deux en
-cohérence.
+.. warning::
+    Si cette valeur ou la fréquence des réémissions de notifications dans Nagios
+    doivent être modifiées, il faut faire attention à toujours garder les deux
+    en cohérence.
 
+Emplacement du fichier de verrou
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Un fichier de verrou est créé par le connector-syncevents afin d'empêcher
+l'exécution simultanée de plusieurs instances du connecteur.
+
+L'option ``lockfile`` peut être utilisée pour spécifier l'emplacement du
+fichier de verrou à créer. L'emplacement par défaut de ce fichier de verrou
+est ``/var/lock/vigilo-connector-syncevents/lock``.
+
+Limite sur le nombre de demandes d'état
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+L'option ``max_events`` permet de limiter le nombre de demandes de réémission
+d'état qui peuvent être envoyées à Nagios au cours d'une exécution du
+connecteur syncevents.
+
+Cette option est particulièrement utile afin d'empêcher une inondation du bus
+de communication de Vigilo sur un parc de grande taille lorsqu'un incident
+majeur survient sur la plate-forme de supervision (par exemple : collecteur
+qui ne répond plus).
+
+Si cette option n'est pas renseignée, aucune limite n'est imposée sur le nombre
+de demandes de réémission d'état qui peuvent être envoyées à Nagios au cours
+de la même exécution.
 
 Utilisation
 ===========
@@ -120,7 +151,9 @@ requête SQL est effectuée). Une bonne pratique consiste à exécuter
 périodiquement cette commande à l'aide d'un planificateur de tâches comme
 *cron*.
 
-Le listing suivant donne un exemple de configuration utilisant *cron*::
+Le listing suivant donne un exemple de configuration utilisant *cron* :
+
+.. sourcecode:: crontab
 
     # minutes heures n°jour mois jour commande > journal
     # Exécution de la commande de synchronisation.
@@ -137,9 +170,9 @@ dans le fichier ``/etc/cron.d/vigilo-connector-syncevents``.
 
 Nature des informations transmises
 ----------------------------------
-Le connecteur syncevents envoie des messages de commande qui seront récupérées
-par le connector-nagios, puis transmis à Nagios après avoir été convertis vers
-la syntaxe adéquate.
+Le connecteur syncevents envoie des messages contenant des commandes qui seront
+récupérées par le connector-nagios, puis transmises à Nagios après avoir été
+converties en utilisant la syntaxe adéquate.
 
 Ce messages sont des demandes de ré-émission de notification, définis dans la
 documentation Nagios aux URL suivantes :
@@ -151,7 +184,9 @@ documentation Nagios aux URL suivantes :
 .. _SEND_CUSTOM_SVC_NOTIFICATION: http://old.nagios.org/developerinfo/externalcommands/commandinfo.php?command_id=135
 
 Pour circuler sur le bus XMPP, ces demandes sont encodées dans un message
-Vigilo de type « command », dont un exemple suit::
+Vigilo de type « command », dont un exemple suit :
+
+.. sourcecode:: xml
 
     <command xmlns='http://www.projet-vigilo.org/xmlns/command1'>
       <cmdname>SEND_CUSTOM_SVC_NOTIFICATION</cmdname>
