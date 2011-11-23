@@ -9,6 +9,7 @@ la synchronicité des deux bases.
 """
 
 import time
+import sys
 from datetime import datetime, timedelta
 
 from vigilo.common.conf import settings
@@ -315,7 +316,9 @@ def main():
     # Lock
     lockfile = settings["connector-syncevents"].get("lockfile",
                         "/var/lock/vigilo-connector-syncevents/lock")
-    grab_lock(lockfile)
+    lock_result = grab_lock(lockfile)
+    if not lock_result:
+        sys.exit(1)
     # Récupération des événements corrélés dont la priorité et la
     # durée de consolidation sont supérieures à celles configurées.
     try:
