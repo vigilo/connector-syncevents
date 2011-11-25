@@ -36,6 +36,7 @@ from vigilo.connector import client
 from vigilo.connector.forwarder import PubSubSender
 from vigilo.models.session import DBSession
 from vigilo.models import tables
+from vigilo.models.tables.eventsaggregate import EventsAggregate
 
 
 def get_old_services(time_limit):
@@ -113,7 +114,7 @@ def get_desync_event_services():
         tables.LowLevelService.servicename.label('servicename'),
     ).join(
         (tables.LowLevelService,
-            tables.LowLevelService.idhost == tables.Host.idsupitem),
+            tables.LowLevelService.idhost == tables.Host.idhost),
         (tables.State,
             tables.State.idsupitem == tables.LowLevelService.idservice),
         (tables.Event,
@@ -139,6 +140,20 @@ def get_desync_event_hosts():
         tables.State.state != tables.Event.current_state
     )
 
+def keep_only_open_correvents(req):
+    """
+    Ne conserve que les évènements associés à un correvent encore ouvert
+    @param req: requête SQLAlchemy à filtrer
+    """
+    return req.join(
+            (EventsAggregate,
+                EventsAggregate.idevent == tables.Event.idevent),
+            (tables.CorrEvent,
+                tables.CorrEvent.idcorrevent == EventsAggregate.idcorrevent),
+        ).filter(
+            tables.CorrEvent.status != u'AAClosed'
+        )
+
 def get_desync(time_limit, max_events=0):
     """
     Retourne les hôtes/services à synchroniser.
@@ -155,8 +170,8 @@ def get_desync(time_limit, max_events=0):
 
     lls_old = get_old_services(time_limit)
     hosts_old = get_old_hosts(time_limit)
-    lls_events = get_desync_event_services()
-    hosts_events = get_desync_event_hosts()
+    lls_events = keep_only_open_correvents(get_desync_event_services())
+    hosts_events = keep_only_open_correvents(get_desync_event_hosts())
 
     to_update = union(
         lls_old, hosts_old,
