@@ -151,9 +151,7 @@ requête SQL est effectuée). Une bonne pratique consiste à exécuter
 périodiquement cette commande à l'aide d'un planificateur de tâches comme
 *cron*.
 
-Le listing suivant donne un exemple de configuration utilisant *cron* :
-
-.. sourcecode:: crontab
+Le listing suivant donne un exemple de configuration utilisant *cron*::
 
     # minutes heures n°jour mois jour commande > journal
     # Exécution de la commande de synchronisation.
