@@ -17,7 +17,7 @@ settings.load_module(__name__)
 from vigilo.models.configure import configure_db
 configure_db(settings['database'], 'sqlalchemy_')
 
-from vigilo.common.logging import get_logger
+from vigilo.common.logging import get_logger, get_error_message
 LOGGER = get_logger(__name__)
 
 from vigilo.common.gettext import translate
@@ -185,7 +185,8 @@ def get_desync(time_limit, max_events=0):
     try:
         return DBSession.query(to_update.alias()).all()
     except (InvalidRequestError, OperationalError), e:
-        LOGGER.exception(_('Database exception raised: %s'), e)
+        LOGGER.error(_('Database exception raised: %s'),
+                        get_error_message(e))
         raise e
 
 
@@ -310,4 +311,3 @@ def main():
     app.startApplication(application, False)
     reactor.run()
     LOGGER.info(_("Done sending notification requests"))
-
