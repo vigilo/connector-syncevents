@@ -12,8 +12,7 @@ import unittest
 #from twisted.trial import unittest
 from nose.twistedtools import reactor, deferred # pylint: disable-msg=W0611
 
-from vigilo.pubsub.xml import NS_COMMAND
-from vigilo.connector.test.helpers import XmlStreamStub
+from mock import Mock
 
 from vigilo.connector_syncevents.main import SyncSender
 
@@ -21,53 +20,58 @@ from vigilo.connector_syncevents.main import SyncSender
 # pylint: disable-msg=W0212
 
 
+
 class DBResult(object):
-    def __init__(self, hostname, servicename):
+    def __init__(self, hostname, servicename, vigiloserver):
         self.hostname = hostname
         self.servicename = servicename
+        self.vigiloserver = vigiloserver
+
 
 
 class TestSyncSender(unittest.TestCase):
     """Teste le connecteur XMPP"""
 
+
     def test_buildHostMessage(self):
         """Fonction buildHostMessage"""
-        db = DBResult("testhost", None)
+        db = DBResult("testhost", None, "collector")
         sender = SyncSender(None)
         result = sender._buildNagiosMessage(db)
-        self.assertEqual(result.name, "command")
-        self.assertEqual(result.uri, NS_COMMAND)
-        self.assertEqual(str(result.cmdname),
+        self.assertEqual(result["type"], "nagios")
+        self.assertEqual(result["cmdname"],
                          "SEND_CUSTOM_HOST_NOTIFICATION")
-        self.assertEqual(str(result.value),
+        self.assertEqual(result["value"],
                          "testhost;0;vigilo;syncevents")
+        self.assertEqual(result["routing_key"], "collector")
+
 
     def test_buildServiceMessage(self):
         """Fonction buildServiceMessage"""
-        db = DBResult("testhost", "testservice")
+        db = DBResult("testhost", "testservice", "collector")
         sender = SyncSender(None)
         result = sender._buildNagiosMessage(db)
-        self.assertEqual(result.name, "command")
-        self.assertEqual(result.uri, NS_COMMAND)
-        self.assertEqual(str(result.cmdname),
+        self.assertEqual(result["type"], "nagios")
+        self.assertEqual(result["cmdname"],
                          "SEND_CUSTOM_SVC_NOTIFICATION")
-        self.assertEqual(str(result.value),
+        self.assertEqual(result["value"],
                          "testhost;testservice;0;vigilo;syncevents")
+        self.assertEqual(result["routing_key"], "collector")
 
-    #@deferred(timeout=30)
-    #@defer.inlineCallbacks
+
+    @deferred(timeout=30)
     def test_askNagios(self):
         """Fonction askNagios"""
-        db = DBResult("testhost", "testservice")
+        db = DBResult("testhost", "testservice", "collector")
         count = 42
         tosync = [ db for _i in range(count) ]
         sender = SyncSender(tosync)
-        stub = XmlStreamStub()
-        sender.xmlstream = stub.xmlstream
-        # pas de yield ci-dessous, les réponses n'arriveront jamais
-        sender.askNagios()
-        stub.send_replies()
-        self.assertEqual(len(stub.output), count)
+        sender.publisher = Mock()
+        d = sender.askNagios()
+        def check(r):
+            self.assertEqual(len(sender.publisher.write.call_args_list), count)
+        d.addCallback(check)
+        return d
 
 
 

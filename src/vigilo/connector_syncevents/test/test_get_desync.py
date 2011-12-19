@@ -46,6 +46,10 @@ class TestRequest(unittest.TestCase):
         DBSession.add(tables.StateName(statename=u'UP', order=1))
         DBSession.add(tables.StateName(statename=u'UNREACHABLE', order=2))
         DBSession.add(tables.StateName(statename=u'DOWN', order=4))
+
+        df.add_application("nagios")
+        df.add_vigiloserver("collector")
+
         DBSession.flush()
 
     def tearDown(self):
@@ -61,6 +65,7 @@ class TestRequest(unittest.TestCase):
     def test_age_younger_host(self):
         """Évènements trop récents sur un hôte"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         now = datetime.now()
         age = now - timedelta(minutes=19)
         time_limit = now - timedelta(minutes=20)
@@ -72,6 +77,7 @@ class TestRequest(unittest.TestCase):
     def test_age_equal_host(self):
         """Évènements à la limite d'âge sur un hôte"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         now = datetime.now()
         age = now - timedelta(minutes=20)
         time_limit = age
@@ -80,10 +86,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_age_older_host(self):
         """Évènements suffisamment vieux sur un hôte"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         now = datetime.now()
         age = now - timedelta(minutes=21)
         time_limit = now - timedelta(minutes=20)
@@ -92,10 +100,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_age_younger_service(self):
         """Évènements trop récents sur un service"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=19)
@@ -108,6 +118,7 @@ class TestRequest(unittest.TestCase):
     def test_age_equal_service(self):
         """Évènements à la limite d'âge sur un service"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=20)
@@ -117,10 +128,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_age_older_service(self):
         """Évènements suffisamment vieux sur un service"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=21)
@@ -131,10 +144,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_state_down(self):
         """État DOWN"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_host_state(host, "DOWN", timestamp=age)
@@ -144,10 +159,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_state_up(self):
         """État UP"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_host_state(host, "UP", timestamp=age)
@@ -158,6 +175,7 @@ class TestRequest(unittest.TestCase):
     def test_state_critical(self):
         """État CRITICAL"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=42)
@@ -167,10 +185,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_state_warning(self):
         """État WARNING"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=42)
@@ -180,10 +200,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_state_unknown(self):
         """État UNKNOWN"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=42)
@@ -193,10 +215,12 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_state_ok(self):
         """État OK"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=42)
@@ -208,6 +232,7 @@ class TestRequest(unittest.TestCase):
     def test_service_when_host_down(self):
         """Évènements vieux sur un service dont l'hôte est DOWN"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         now = datetime.now()
         age = now - timedelta(minutes=21)
@@ -225,6 +250,7 @@ class TestRequest(unittest.TestCase):
         for i in range(10):
             host = df.add_host("testhost%d" % i)
             df.add_host_state(host, "DOWN", timestamp=age)
+            df.add_ventilation(host, "collector", "nagios")
         DBSession.flush()
         results = get_desync(now, 2)
         print results
@@ -233,6 +259,7 @@ class TestRequest(unittest.TestCase):
     def test_events_service(self):
         """État différent entre la table State et Event pour un service"""
         host = df.add_host("testhost")
+        df.add_ventilation(host, "collector", "nagios")
         svc = df.add_lowlevelservice(host, "testsvc")
         df.add_svc_state(svc, "WARNING")
         e = df.add_event(svc, "CRITICAL", "dummy")
@@ -250,12 +277,14 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_events_hosts(self):
         """État différent entre la table State et Event pour un hôte"""
         host = df.add_host("testhost")
         df.add_host_state(host, "OK")
         e = df.add_event(host, "DOWN", "dummy")
+        df.add_ventilation(host, "collector", "nagios")
         # on créé un hôte normal (synchronisé) pour que l'hôte à tester
         # ne soit pas la cause de l'aggrégat
         host_normal = df.add_host("normalhost")
@@ -270,6 +299,7 @@ class TestRequest(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
+        self.assertEqual(results[0].vigiloserver, "collector")
 
     def test_event_closed_service(self):
         """Évènements vieux mais sur un correvent fermé (service)"""

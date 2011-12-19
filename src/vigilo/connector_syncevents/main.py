@@ -10,7 +10,10 @@ la synchronicité des deux bases.
 
 import time
 import sys
+from optparse import OptionParser
 from datetime import datetime, timedelta
+
+from zope.interface import implements
 
 from vigilo.common.conf import settings
 settings.load_module(__name__)
@@ -25,19 +28,32 @@ from vigilo.common.gettext import translate
 _ = translate(__name__)
 
 from twisted.internet import defer
-from twisted.application import service, app
-from twisted.internet import reactor
-from twisted.words.xish import domish
 from sqlalchemy.exc import InvalidRequestError, OperationalError
 from sqlalchemy.sql.expression import null as expr_null, union
 
 from vigilo.common.lock import grab_lock
-from vigilo.pubsub.xml import NS_COMMAND
-from vigilo.connector import client
-from vigilo.connector.forwarder import PubSubSender
+from vigilo.connector.client import oneshotclient_factory
+from vigilo.connector.handlers import buspublisher_factory
 from vigilo.models.session import DBSession
 from vigilo.models import tables
 from vigilo.models.tables.eventsaggregate import EventsAggregate
+
+
+
+def _add_ventilation(query):
+    return query.join(
+                (tables.Ventilation,
+                    tables.Ventilation.idhost == tables.Host.idhost),
+                (tables.VigiloServer,
+                    tables.VigiloServer.idvigiloserver
+                    == tables.Ventilation.idvigiloserver),
+                (tables.Application,
+                    tables.Application.idapp == tables.Ventilation.idapp),
+            ).filter(
+                tables.Application.name == u"nagios"
+            ).filter(
+                tables.VigiloServer.disabled == False
+            )
 
 
 def get_old_services(time_limit):
@@ -74,6 +90,7 @@ def get_old_services(time_limit):
     lls_to_update = DBSession.query(
         tables.Host.name.label('hostname'),
         tables.LowLevelService.servicename.label('servicename'),
+        tables.VigiloServer.name.label("vigiloserver"),
     ).join(
         (tables.LowLevelService,
             tables.LowLevelService.idhost == tables.Host.idsupitem),
@@ -88,7 +105,8 @@ def get_old_services(time_limit):
     ).filter(
         ~tables.Host.idhost.in_(hosts_down)
     )
-    return lls_to_update
+    return _add_ventilation(lls_to_update)
+
 
 def get_old_hosts(time_limit):
     """
@@ -103,20 +121,23 @@ def get_old_hosts(time_limit):
         dont l'état est obsolète.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
-    return DBSession.query(
+    q = DBSession.query(
         tables.Host.name.label('hostname'),
         # pour faire une UNION il faut le même nombre de colonnes
         expr_null().label('servicename'),
+        tables.VigiloServer.name.label("vigiloserver"),
     ).join(
         (tables.State,
             tables.State.idsupitem == tables.Host.idhost),
         (tables.StateName,
             tables.StateName.idstatename == tables.State.state),
     ).filter(
-        tables.StateName.statename == u"DOWN",
+        tables.StateName.statename == u"DOWN"
     ).filter(
-        tables.State.timestamp <= time_limit,
+        tables.State.timestamp <= time_limit
     )
+    return _add_ventilation(q)
+
 
 def get_desync_event_services():
     """
@@ -126,9 +147,10 @@ def get_desync_event_services():
         dont l'état ne correspond pas au dernier événement stocké.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
-    return DBSession.query(
+    q = DBSession.query(
         tables.Host.name.label('hostname'),
         tables.LowLevelService.servicename.label('servicename'),
+        tables.VigiloServer.name.label("vigiloserver"),
     ).join(
         (tables.LowLevelService,
             tables.LowLevelService.idhost == tables.Host.idhost),
@@ -139,6 +161,8 @@ def get_desync_event_services():
     ).filter(
         tables.State.state != tables.Event.current_state
     )
+    return _add_ventilation(q)
+
 
 def get_desync_event_hosts():
     """
@@ -148,10 +172,11 @@ def get_desync_event_hosts():
         dont l'état ne correspond pas au dernier événement stocké.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
-    return DBSession.query(
+    q = DBSession.query(
         tables.Host.name.label('hostname'),
         # pour faire une UNION il faut le même nombre de colonnes
         expr_null().label('servicename'),
+        tables.VigiloServer.name.label("vigiloserver"),
     ).join(
         (tables.State,
             tables.State.idsupitem == tables.Host.idhost),
@@ -160,6 +185,8 @@ def get_desync_event_hosts():
     ).filter(
         tables.State.state != tables.Event.current_state
     )
+    return _add_ventilation(q)
+
 
 def keep_only_open_correvents(req):
     """
@@ -188,6 +215,8 @@ def get_desync(time_limit, max_events=0):
     @type  max_events: C{int}
     @return: Liste d'hôtes/services à synchroniser
     @rtype: C{list} of C{mixed}
+
+    @todo: récupérer aussi l'adresse du serveur nagios dans la ventilation
     """
     LOGGER.info(_("Listing events in the database older than %s"),
                  time_limit.strftime("%Y-%m-%d %H:%M:%S"))
@@ -214,10 +243,14 @@ def get_desync(time_limit, max_events=0):
         raise e
 
 
-class SyncSender(PubSubSender):
+
+class SyncSender(object):
     """
     Envoi des demandes de synchronisation sur le bus, à destination des serveurs Nagios
     """
+
+    #implements(IPushProducer)
+
 
     def __init__(self, to_sync):
         """
@@ -226,25 +259,17 @@ class SyncSender(PubSubSender):
             propriété C{servicename}
         @type  to_sync: C{list}
         """
-        super(SyncSender, self).__init__()
-        # pas de trucs compliqués
-        self.max_send_simult = 1
-        self.batch_send_perf = 1
-        # ce qu'il faut envoyer
         self.to_sync = to_sync
+        self.publisher = None # BusSender
 
-    def connectionInitialized(self):
-        """À la connexion, on envoie les demandes, puis on se déconnecte"""
-        super(SyncSender, self).connectionInitialized()
-        d = self.askNagios()
-        d.addCallback(lambda x: self.quit())
 
     @defer.inlineCallbacks
     def askNagios(self):
         """Envoie les demandes de notifications à Nagios"""
         for supitem in self.to_sync:
             message = self._buildNagiosMessage(supitem)
-            yield self.publishXml(message)
+            yield self.publisher.write(message)
+
 
     def _buildNagiosMessage(self, supitem):
         """
@@ -253,72 +278,52 @@ class SyncSender(PubSubSender):
         @param supitem: Hôte ou service concerné. Doit disposer d'une propriété
             C{hostname} et d'une propriété C{servicename}
         @type  supitem: C{object}
-        @return: Le message XML construit.
-        @rtype: C{domish.Element}
+        @return: Le message pour Nagios
+        @rtype: C{dict}
+        @todo: ajouter une clé routing_key pour n'envoyer qu'au serveur Nagios
+            concerné
         """
+        msg = { "type": "nagios",
+                "timestamp": int(time.time()),
+                "routing_key": supitem.vigiloserver,
+                }
         if supitem.servicename:
+            msg["cmdname"] = "SEND_CUSTOM_SVC_NOTIFICATION"
+            msg["value"] = ("%s;%s;0;vigilo;syncevents"
+                         % (supitem.hostname, supitem.servicename))
             LOGGER.debug(_("Asking update for service \"%(service)s\" "
                            "on host \"%(host)s\""),
                          {"host": supitem.hostname,
                           "service": supitem.servicename})
-            return self._buildNagiosServiceMessage(supitem.hostname,
-                                                   supitem.servicename)
         else:
+            msg["cmdname"] = "SEND_CUSTOM_HOST_NOTIFICATION"
+            msg["value"] = "%s;0;vigilo;syncevents" % supitem.hostname
             LOGGER.debug(_("Asking update for host \"%(host)s\""),
                          {"host": supitem.hostname})
-            return self._buildNagiosHostMessage(supitem.hostname)
-
-    def _buildNagiosServiceMessage(self, hostname, servicename):
-        """
-        Construit un message de demande de notification pour un service Nagios.
-
-        @param hostname: nom d'hôte
-        @type  hostname: C{str}
-        @param servicename: nom de service
-        @type  servicename: C{str}
-        @return: Le message XML construit.
-        @rtype: C{domish.Element}
-        """
-        msg = domish.Element((NS_COMMAND, 'command'))
-        msg.addElement('timestamp', content=str(int(time.time())))
-        msg.addElement('cmdname', content="SEND_CUSTOM_SVC_NOTIFICATION")
-        cmdvalue = "%s;%s;0;vigilo;syncevents" % (hostname, servicename)
-        msg.addElement('value', content=cmdvalue)
         return msg
-
-    def _buildNagiosHostMessage(self, hostname):
-        """
-        Construit un message de demande de notification pour un hôte Nagios.
-
-        @param hostname: nom d'hôte
-        @type  hostname: C{str}
-        @return: Le message XML construit.
-        @rtype: C{domish.Element}
-        """
-        msg = domish.Element((NS_COMMAND, 'command'))
-        msg.addElement('timestamp', content=str(int(time.time())))
-        msg.addElement('cmdname', content="SEND_CUSTOM_HOST_NOTIFICATION")
-        cmdvalue = "%s;0;vigilo;syncevents" % hostname
-        msg.addElement('value', content=cmdvalue)
-        return msg
-
-    def quit(self):
-        """Déconnexion du bus et arrêt du connecteur"""
-        self.xmlstream.sendFooter()
-        reactor.stop()
 
 
 
 def main():
-    """
-    Fonction principale
-    """
+    # Options
+    opt_parser = OptionParser()
+    opt_parser.add_option("-d", "--debug")
+    opts, args = opt_parser.parse_opts()
+    if args:
+        opt_parser.error("No arguments allowed")
+    if opts.debug:
+        LOGGER.parent.setLevel(logging.DEBUG)
+        log_traffic = True
+    else:
+        log_traffic = False
+
     # Lock
     lockfile = settings["connector-syncevents"].get("lockfile",
                         "/var/lock/vigilo-connector-syncevents/lock")
     lock_result = grab_lock(lockfile)
     if not lock_result:
         sys.exit(1)
+
     # Récupération des événements corrélés dont la priorité et la
     # durée de consolidation sont supérieures à celles configurées.
     try:
@@ -336,13 +341,14 @@ def main():
         return # rien à faire
     LOGGER.info(_("Found %d event(s) to synchronize"), len(events))
 
-    xmpp_client = client.client_factory(settings)
-    xmpp_client.factory.noisy = False
-    sender = SyncSender(events)
-    sender.setHandlerParent(xmpp_client)
+    client = oneshotclient_factory(settings)
+    client.factory.noisy = False
 
-    application = service.Application('Vigilo state synchronizer')
-    xmpp_client.setServiceParent(application)
-    app.startApplication(application, False)
-    reactor.run()
-    LOGGER.info(_("Done sending notification requests"))
+    syncsender = SyncSender(events)
+    client.setHandler(syncsender.askNagios)
+
+    bus_publisher = buspublisher_factory(settings, client)
+    syncsender.publisher = bus_publisher
+    #bus_publisher.registerProducer(syncsender, streaming=True)
+
+    return client.run(log_traffic=log_traffic)
