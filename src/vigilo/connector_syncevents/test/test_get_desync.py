@@ -36,7 +36,7 @@ class TestRequest(unittest.TestCase):
         del mapped_tables[tables.grouppath.GroupPath.__tablename__]
         del mapped_tables[tables.usersupitem.UserSupItem.__tablename__]
         metadata.create_all(tables=mapped_tables.itervalues())
-        metadata.create_all(tables=[tables.grouppath.GroupPath.__table__, 
+        metadata.create_all(tables=[tables.grouppath.GroupPath.__table__,
             tables.usersupitem.UserSupItem.__table__])
 
         DBSession.add(tables.StateName(statename=u'OK', order=1))
@@ -284,8 +284,8 @@ class TestRequest(unittest.TestCase):
         e_normal = df.add_event(svc_normal, "WARNING", "dummy")
         # 2 correvents sont ajoutés : un où le service à tester est la cause,
         # un où il ne l'est pas.
-        df.add_correvent([e, e_normal], status="AAClosed")
-        df.add_correvent([e_normal, e], status="AAClosed")
+        df.add_correvent([e, e_normal], status=tables.CorrEvent.ACK_CLOSED)
+        df.add_correvent([e_normal, e], status=tables.CorrEvent.ACK_CLOSED)
         results = get_desync(datetime.now() - timedelta(minutes=42))
         print results
         self.assertEqual(len(results), 0)
@@ -296,8 +296,7 @@ class TestRequest(unittest.TestCase):
         host = df.add_host("testhost2")
         df.add_host_state(host, "UP")
         e = df.add_event(host, "DOWN", "dummy")
-        df.add_correvent([e], status="AAClosed")
+        df.add_correvent([e], status=tables.CorrEvent.ACK_CLOSED)
         results = get_desync(datetime.now() - timedelta(minutes=42))
         print results
         self.assertEqual(len(results), 0)
-

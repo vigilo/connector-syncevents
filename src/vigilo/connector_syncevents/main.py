@@ -151,7 +151,7 @@ def keep_only_open_correvents(req):
             (tables.CorrEvent,
                 tables.CorrEvent.idcorrevent == EventsAggregate.idcorrevent),
         ).filter(
-            tables.CorrEvent.status != u'AAClosed'
+            tables.CorrEvent.ack != tables.CorrEvent.ACK_CLOSED
         )
 
 def get_desync(time_limit, max_events=0):
