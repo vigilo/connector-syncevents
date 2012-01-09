@@ -50,6 +50,12 @@ def get_old_services(time_limit):
 
     Attention par contre, si l'hôte est down Nagios n'enverra pas de mise à
     jours pour les services de cet hôte. Il faut donc exclure ces services.
+
+    @param time_limit: Date après laquelle on ignore les états.
+    @type  time_limit: C{datetime.datetime}
+    @return: Requête SQL permettant de récupérer la liste des services
+        dont l'état est obsolète.
+    @rtype: C{sqlalchemy.orm.query.Query}
     """
     # On récupère d'abord les hôtes DOWN pour pouvoir ne remonter que les
     # services désynchronisés sur les hôtes UP (#727)
@@ -89,6 +95,12 @@ def get_old_hosts(time_limit):
 
     Voir le commentaire précédent sur les service pour le critère de
     désynchronisation. La situation est similaire pour les hôtes.
+
+    @param time_limit: Date après laquelle on ignore les états.
+    @type  time_limit: C{datetime.datetime}
+    @return: Requête SQL permettant de récupérer la liste des hôtes
+        dont l'état est obsolète.
+    @rtype: C{sqlalchemy.orm.query.Query}
     """
     return DBSession.query(
         tables.Host.name.label('hostname'),
@@ -108,6 +120,10 @@ def get_old_hosts(time_limit):
 def get_desync_event_services():
     """
     Récupère les services dont l'état et les événements sont désynchronisés
+
+    @return: Requête SQL permettant de récupérer la liste des services
+        dont l'état ne correspond pas au dernier événement stocké.
+    @rtype: C{sqlalchemy.orm.query.Query}
     """
     return DBSession.query(
         tables.Host.name.label('hostname'),
@@ -126,6 +142,10 @@ def get_desync_event_services():
 def get_desync_event_hosts():
     """
     Récupère les hôtes dont l'état et les événements sont désynchronisés
+
+    @return: Requête SQL permettant de récupérer la liste des hôtes
+        dont l'état ne correspond pas au dernier événement stocké.
+    @rtype: C{sqlalchemy.orm.query.Query}
     """
     return DBSession.query(
         tables.Host.name.label('hostname'),
@@ -142,8 +162,11 @@ def get_desync_event_hosts():
 
 def keep_only_open_correvents(req):
     """
-    Ne conserve que les évènements associés à un correvent encore ouvert
-    @param req: requête SQLAlchemy à filtrer
+    Ne conserve que les évènements associés à un L{CorrEvent} encore ouvert
+
+    @param req: Requête SQLAlchemy de filtrage pour ne garder que les
+        L{CorrEvent} actifs.
+    @type req: C{sqlalchemy.orm.query.Query}
     """
     return req.join(
             (EventsAggregate,
@@ -224,10 +247,13 @@ class SyncSender(PubSubSender):
 
     def _buildNagiosMessage(self, supitem):
         """
-        Construit le message de commande Nagios approprié
+        Construit le message de commande Nagios approprié.
+
         @param supitem: Hôte ou service concerné. Doit disposer d'une propriété
             C{hostname} et d'une propriété C{servicename}
         @type  supitem: C{object}
+        @return: Le message XML construit.
+        @rtype: C{domish.Element}
         """
         if supitem.servicename:
             LOGGER.debug(_("Asking update for service \"%(service)s\" "
@@ -243,11 +269,14 @@ class SyncSender(PubSubSender):
 
     def _buildNagiosServiceMessage(self, hostname, servicename):
         """
-        Construit un message de demande de notification pour un service Nagios
+        Construit un message de demande de notification pour un service Nagios.
+
         @param hostname: nom d'hôte
         @type  hostname: C{str}
         @param servicename: nom de service
         @type  servicename: C{str}
+        @return: Le message XML construit.
+        @rtype: C{domish.Element}
         """
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
@@ -258,9 +287,12 @@ class SyncSender(PubSubSender):
 
     def _buildNagiosHostMessage(self, hostname):
         """
-        Construit un message de demande de notification pour un hôte Nagios
+        Construit un message de demande de notification pour un hôte Nagios.
+
         @param hostname: nom d'hôte
         @type  hostname: C{str}
+        @return: Le message XML construit.
+        @rtype: C{domish.Element}
         """
         msg = domish.Element((NS_COMMAND, 'command'))
         msg.addElement('timestamp', content=str(int(time.time())))
