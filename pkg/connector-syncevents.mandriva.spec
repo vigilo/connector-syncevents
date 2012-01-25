@@ -16,18 +16,8 @@ BuildRequires:   python-babel
 
 Requires:   python >= 2.5
 Requires:   python-setuptools
-Requires:   vigilo-common
 Requires:   vigilo-connector
 Requires:   vigilo-models
-######### Dependance from python dependance tree ########
-Requires:   vigilo-pubsub
-Requires:   vigilo-common
-Requires:   python-twisted
-Requires:   python-wokkel
-Requires:   python-configobj
-Requires:   python-babel
-Requires:   python-zope-interface
-Requires:   python-setuptools
 
 Requires(pre): rpm-helper
 
