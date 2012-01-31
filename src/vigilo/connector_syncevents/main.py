@@ -264,7 +264,7 @@ class SyncSender(object):
 
 
     @defer.inlineCallbacks
-    def askNagios(self):
+    def askNagios(self, client):
         """Envoie les demandes de notifications à Nagios"""
         for supitem in self.to_sync:
             message = self._buildNagiosMessage(supitem)

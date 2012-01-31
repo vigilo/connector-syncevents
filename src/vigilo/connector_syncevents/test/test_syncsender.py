@@ -67,7 +67,7 @@ class TestSyncSender(unittest.TestCase):
         tosync = [ db for _i in range(count) ]
         sender = SyncSender(tosync)
         sender.publisher = Mock()
-        d = sender.askNagios()
+        d = sender.askNagios(None)
         def check(r):
             self.assertEqual(len(sender.publisher.write.call_args_list), count)
         d.addCallback(check)
