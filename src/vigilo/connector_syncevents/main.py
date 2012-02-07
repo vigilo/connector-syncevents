@@ -10,6 +10,7 @@ la synchronicité des deux bases.
 
 import time
 import sys
+import logging
 from optparse import OptionParser
 from datetime import datetime, timedelta
 
@@ -307,8 +308,8 @@ class SyncSender(object):
 def main():
     # Options
     opt_parser = OptionParser()
-    opt_parser.add_option("-d", "--debug")
-    opts, args = opt_parser.parse_opts()
+    opt_parser.add_option("-d", "--debug", action="store_true")
+    opts, args = opt_parser.parse_args()
     if args:
         opt_parser.error("No arguments allowed")
     if opts.debug:
@@ -341,14 +342,14 @@ def main():
         return # rien à faire
     LOGGER.info(_("Found %d event(s) to synchronize"), len(events))
 
-    client = oneshotclient_factory(settings)
-    client.factory.noisy = False
+    osc = oneshotclient_factory(settings)
+    osc.client.factory.noisy = False
 
     syncsender = SyncSender(events)
-    client.setHandler(syncsender.askNagios)
+    osc.setHandler(syncsender.askNagios)
 
-    bus_publisher = buspublisher_factory(settings, client)
+    bus_publisher = buspublisher_factory(settings, osc.client)
     syncsender.publisher = bus_publisher
     #bus_publisher.registerProducer(syncsender, streaming=True)
 
-    return client.run(log_traffic=log_traffic)
+    return osc.run(log_traffic=log_traffic)
