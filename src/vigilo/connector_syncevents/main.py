@@ -309,6 +309,8 @@ def main():
     # Options
     opt_parser = OptionParser()
     opt_parser.add_option("-d", "--debug", action="store_true")
+    opt_parser.add_option("-n", "--dry-run", action="store_true",
+                          help="Do not send synchronization messages")
     opts, args = opt_parser.parse_args()
     if args:
         opt_parser.error("No arguments allowed")
@@ -341,6 +343,18 @@ def main():
         LOGGER.info(_("No events to synchronize"))
         return # rien à faire
     LOGGER.info(_("Found %d event(s) to synchronize"), len(events))
+
+    if opts.dry_run:
+        for supitem in events:
+            if supitem.servicename:
+                LOGGER.debug(_("Asking update for service \"%(service)s\" "
+                               "on host \"%(host)s\""),
+                             {"host": supitem.hostname,
+                              "service": supitem.servicename})
+            else:
+                LOGGER.debug(_("Asking update for host \"%(host)s\""),
+                             {"host": supitem.hostname})
+        return
 
     osc = oneshotclient_factory(settings)
     osc.client.factory.noisy = False
