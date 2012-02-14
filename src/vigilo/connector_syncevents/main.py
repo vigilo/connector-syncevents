@@ -194,7 +194,7 @@ def keep_only_open_correvents(req):
     Ne conserve que les évènements associés à un L{CorrEvent} encore ouvert
 
     @param req: Requête SQLAlchemy de filtrage pour ne garder que les
-        L{CorrEvent} actifs.
+        C{CorrEvent} actifs.
     @type req: C{sqlalchemy.orm.query.Query}
     """
     return req.join(
