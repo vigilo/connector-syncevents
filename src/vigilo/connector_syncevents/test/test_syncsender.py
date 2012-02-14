@@ -30,7 +30,6 @@ class DBResult(object):
 
 
 class TestSyncSender(unittest.TestCase):
-    """Teste le connecteur XMPP"""
 
 
     def test_buildHostMessage(self):
