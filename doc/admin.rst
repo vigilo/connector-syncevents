@@ -135,15 +135,15 @@ documentation Nagios aux URL suivantes :
 .. _SEND_CUSTOM_HOST_NOTIFICATION: http://old.nagios.org/developerinfo/externalcommands/commandinfo.php?command_id=134
 .. _SEND_CUSTOM_SVC_NOTIFICATION: http://old.nagios.org/developerinfo/externalcommands/commandinfo.php?command_id=135
 
-Pour circuler sur le bus XMPP, ces demandes sont encodées dans un message
+Pour circuler sur le bus, ces demandes sont encodées dans un message
 Vigilo de type « command », dont un exemple suit :
 
-.. sourcecode:: xml
+.. sourcecode:: json
 
-    <command xmlns='http://www.projet-vigilo.org/xmlns/command1'>
-      <cmdname>SEND_CUSTOM_SVC_NOTIFICATION</cmdname>
-      <value>server.example.com;Load 01;0;vigilo;syncevents</value>
-    </command>
+    { "type": "nagios",
+      "cmdname": "SEND_CUSTOM_SVC_NOTIFICATION",
+      "value": "server.example.com;Load 01;0;vigilo;syncevents",
+    }
 
 Après réception par Nagios, ce dernier va ré-expédier une notification de
 l'état de l'hôte ou du service concerné, qui suivra le chemin classique des
