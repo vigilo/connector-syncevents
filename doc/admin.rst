@@ -15,53 +15,11 @@ préalable des logiciels suivants est requise :
 * ejabberd (>= 2.1), éventuellement sur une machine distante
 * postgresql-server (>= 8.3), éventuellement sur une machine distante
 
-Reportez-vous aux manuels de ces différents logiciels pour savoir comment
-procéder à leur installation sur votre machine.
 
-Ce module requiert également la présence de plusieurs dépendances Python. Ces
-dépendances seront automatiquement installées en même temps que le paquet du
-connecteur.
+.. Installation du RPM
+.. include:: ../buildenv/doc/package.rst
 
-Installation du paquet RPM
---------------------------
-L'installation du connecteur se fait en installant simplement le paquet RPM
-« vigilo-connector-syncevents ». La procédure exacte d'installation dépend du
-gestionnaire de paquets utilisé. Les instructions suivantes décrivent la
-procédure pour les gestionnaires de paquets RPM les plus fréquemment
-rencontrés.
-
-Installation à l'aide de urpmi ::
-
-    urpmi vigilo-connector-syncevents
-
-Installation à l'aide de yum ::
-
-    yum install vigilo-connector-syncevents
-
-Création du compte XMPP
------------------------
-Le connector-syncevents nécessite qu'un compte soit créé sur la machine hébergeant
-le bus XMPP pour le composant.
-
-Les comptes doivent être créés sur la machine qui héberge le serveur ejabberd,
-à l'aide de la commande ::
-
-    $ su ejabberd -c \
-        'ejabberdctl register connector-syncevents localhost connector-syncevents'
-
-**Note :** si plusieurs instances du connecteur s'exécutent simultanément sur
-le parc, chaque instance doit disposer de son propre compte (JID). Dans le cas
-contraire, des conflits risquent de survenir qui peuvent perturber le bon
-fonctionnement de la solution.
-
-
-
-Configuration
-=============
-
-Le module connector-syncevents est fourni avec un fichier de configuration
-situé par défaut dans ``/etc/vigilo/connector-syncevents/settings.ini``.
-
+.. Compte sur le bus et fichier de configuration
 .. include:: ../../connector/doc/admin-conf-1.rst
 
 .. Lister ici les sections spécifiques au connecteur
@@ -75,8 +33,6 @@ database
 
 .. include:: ../../connector/doc/admin-conf-2.rst
 
-.. include:: ../../models/doc/admin-conf.rst
-
 .. Documenter ici les sections spécifiques au connecteur
 
 Configuration spécifique au connecteur syncevents
@@ -87,7 +43,6 @@ spécifiques, détaillées ci-dessous.
 
 Seuil pour l'envoi de demandes d'état
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 L'option ``minutes_old`` détermine l'âge minimum d'une alerte (en minutes),
 au-dessous duquel on ne demande pas de mise à jour à Nagios. Vigilo configure
 Nagios pour que des notifications soient réémises toutes les 30 minutes,
@@ -103,7 +58,6 @@ La valeur par défaut est 35 minutes.
 
 Emplacement du fichier de verrou
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Un fichier de verrou est créé par le connector-syncevents afin d'empêcher
 l'exécution simultanée de plusieurs instances du connecteur.
 
@@ -113,7 +67,6 @@ est ``/var/lock/vigilo-connector-syncevents/lock``.
 
 Limite sur le nombre de demandes d'état
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 L'option ``max_events`` permet de limiter le nombre de demandes de réémission
 d'état qui peuvent être envoyées à Nagios au cours d'une exécution du
 connecteur syncevents.
@@ -126,6 +79,7 @@ qui ne répond plus).
 Si cette option n'est pas renseignée, aucune limite n'est imposée sur le nombre
 de demandes de réémission d'état qui peuvent être envoyées à Nagios au cours
 de la même exécution.
+
 
 Utilisation
 ===========
