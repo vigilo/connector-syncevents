@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
-project = u'Vigilo connector-syncevents'
+name = u'connector-syncevents'
+
+project = u'Vigilo %s' % name
 
 pdf_documents = [
-        ('admin', "admin-connector-syncevents", "Connector-syncevents : Guide d'administration", u'Vigilo'),
+        ('admin', "admin-%s" % name, "Connector-syncevents : Guide d'administration", u'Vigilo'),
 ]
 
 latex_documents = [
-        ('admin', 'admin-connector-syncevents.tex', u"Connector-syncevents : Guide d'administration",
+        ('admin', 'admin-%s.tex' % name, u"Connector-syncevents : Guide d'administration",
          'AA100004-2/TODO', 'vigilo'),
 ]
 
