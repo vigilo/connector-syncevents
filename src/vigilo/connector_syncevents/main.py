@@ -191,7 +191,7 @@ def get_desync_event_hosts():
 
 def keep_only_open_correvents(req):
     """
-    Ne conserve que les évènements associés à un L{CorrEvent} encore ouvert
+    Ne conserve que les évènements associés à un C{CorrEvent} encore ouvert
 
     @param req: Requête SQLAlchemy de filtrage pour ne garder que les
         C{CorrEvent} actifs.
