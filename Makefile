@@ -3,7 +3,7 @@ USER := vigilo-syncevents
 
 all: build
 
-include buildenv/Makefile.common
+include buildenv/Makefile.common.python
 
 
 install: build install_python install_permissions
