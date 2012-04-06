@@ -138,7 +138,7 @@ documentation Nagios aux URL suivantes :
 Pour circuler sur le bus, ces demandes sont encodées dans un message
 Vigilo de type « command », dont un exemple suit :
 
-.. sourcecode:: json
+.. sourcecode:: javascript
 
     { "type": "nagios",
       "cmdname": "SEND_CUSTOM_SVC_NOTIFICATION",
