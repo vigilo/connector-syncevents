@@ -32,13 +32,13 @@ msgstr "Exception dans la base de données : %s"
 #, python-format
 msgid "Asking update for service \"%(service)s\" on host \"%(host)s\""
 msgstr ""
-"Demande d'une mise à jour poue le service \"%(service)s\" sur l'hôte "
+"Demande d'une mise à jour pour le service \"%(service)s\" sur l'hôte "
 "\"%(host)s\""
 
 #: src/vigilo/connector_syncevents/main.py:139
 #, python-format
 msgid "Asking update for host \"%(host)s\""
-msgstr "Demande d'une mise à jour poue l'hôte \"%(host)s\""
+msgstr "Demande d'une mise à jour pour l'hôte \"%(host)s\""
 
 #: src/vigilo/connector_syncevents/main.py:191
 msgid "No events to synchronize"
