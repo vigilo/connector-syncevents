@@ -1,0 +1,39 @@
+Source: vigilo-connector-syncevents
+Section: python
+Priority: extra
+Maintainer: Vigilo Team <contact@projet-vigilo.org>
+Build-Depends:
+ debhelper (>= 7.0.50~),
+ python (>= 2.6.6-3~),
+ python-setuptools,
+ python-all
+Standards-Version: 3.8.4
+Homepage: http://www.projet-vigilo.org/
+X-Python-Version: >= 2.5
+
+Package: vigilo-connector-syncevents
+Architecture: all
+Suggests: vigilo-connector-syncevents-doc
+Depends:
+ ${misc:Depends},
+ ${python:Depends},
+ adduser (>= 3.11),
+ grep,
+ passwd
+Description: A connector for periodical resyncs
+ A connector that periodically looks for information that seems
+ to be out of sync in Vigilo's database and requests updates
+ from collectors.
+
+Package: vigilo-connector-syncevents-doc
+Architecture: all
+Section: doc
+Depends: ${sphinxdoc:Depends} ${misc:Depends}
+Description: A connector for periodical resyncs (documentation)
+ A connector that periodically looks for information that seems
+ to be out of sync in Vigilo's database and requests updates
+ from collectors.
+ .
+ This package contains documentation about the vigilo-connector-syncevents
+ connector.
+

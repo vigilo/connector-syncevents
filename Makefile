@@ -16,6 +16,11 @@ install_python_pkg: settings.ini $(PYTHON)
 		$(SETUP_PY_OPTS) --root=$(DESTDIR)
 
 install_permissions:
+	@echo "Creating the $(USER) user..."
+	-/usr/sbin/groupadd $(USER)
+	-/usr/sbin/useradd -s /sbin/nologin -M -g $(USER) \
+		-d $(LOCALSTATEDIR)/lib/vigilo/$(NAME) \
+		-c 'Vigilo $(USER) user' $(USER)
 	chgrp $(USER) $(SYSCONFDIR)/vigilo/$(NAME)/settings.ini
 	chmod 640 $(SYSCONFDIR)/vigilo/$(NAME)/settings.ini
 
