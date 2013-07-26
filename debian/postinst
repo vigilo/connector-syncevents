@@ -57,9 +57,10 @@ case "$1" in
            -g $USER_GROUP  \
               $USER
 
-        chown root:$USER /etc/vigilo/$MODULE/settings.ini
+        chown $USER:$USER_GROUP $USER_HOME
+        chown root:$USER_GROUP /etc/vigilo/$MODULE/settings.ini
         chmod 640 /etc/vigilo/$MODULE/settings.ini
-        chown $USER:$USER /var/lock/$PKGNAME
+        chown $USER:$USER_GROUP /var/lock/$PKGNAME
 
         twistd --help > /dev/null 2>&1
     ;;
