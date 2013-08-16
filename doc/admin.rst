@@ -8,7 +8,7 @@ Installation
 
 Pré-requis logiciels
 --------------------
-Afin de pouvoir faire fonctionner le connecteur de métrologie, l'installation
+Afin de pouvoir faire fonctionner le connecteur syncevents, l'installation
 préalable des logiciels suivants est requise :
 
 * python (>= 2.5), sur la machine où le connecteur est installé
