@@ -1,4 +1,0 @@
-#
-# Prevent event desynchronization with Nagios
-#
-#*/10 * * * * vigilo-syncevents   logger -it "vigilo-connector-syncevents" "$(/usr/bin/vigilo-connector-syncevents 2>&1 1>/dev/null)"
