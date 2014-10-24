@@ -59,14 +59,14 @@ def _add_ventilation(query):
 
 def get_old_services(time_limit):
     """
-    Récupère les services à synchroniser
+    Récupère les services à synchroniser.
 
     On configure Nagios pour renvoyer l'état des services non-OK toutes les X
     minutes. L'état est alors mis à jour dans la base. Donc si on trouve un
     état dans la base qui n'a pas été mis à jour il y a moins de X minutes,
     c'est potentiellement un message perdu, donc un service à re-synchroniser.
 
-    Attention par contre, si l'hôte est down Nagios n'enverra pas de mise à
+    Attention par contre, si l'hôte est DOWN Nagios n'enverra pas de mise à
     jours pour les services de cet hôte. Il faut donc exclure ces services.
 
     @param time_limit: Date après laquelle on ignore les états.
@@ -75,17 +75,19 @@ def get_old_services(time_limit):
         dont l'état est obsolète.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
-    # On récupère d'abord les hôtes DOWN pour pouvoir ne remonter que les
-    # services désynchronisés sur les hôtes UP (#727)
+    state_up = tables.StateName.statename_to_value(u'UP')
+    state_ok = tables.StateName.statename_to_value(u'OK')
+
+    # On récupère d'abord les hôtes DOWN/UNREACHABLE pour pouvoir ne remonter
+    # que les services désynchronisés sur les hôtes OK/UP (#727)
+    # Un hôte peut être "OK" si un exploitant a "Forcé à fermer"
+    # une alarme portant sur cet hôte.
     hosts_down = DBSession.query(
         tables.Host.idhost,
     ).join(
-        (tables.State,
-            tables.State.idsupitem == tables.Host.idhost),
-        (tables.StateName,
-            tables.StateName.idstatename == tables.State.state),
+        (tables.State, tables.State.idsupitem == tables.Host.idhost),
     ).filter(
-        tables.StateName.statename == u"DOWN",
+        tables.State.state.in_([state_up, state_ok]),
     )
 
     lls_to_update = DBSession.query(
@@ -97,14 +99,13 @@ def get_old_services(time_limit):
             tables.LowLevelService.idhost == tables.Host.idsupitem),
         (tables.State,
             tables.State.idsupitem == tables.LowLevelService.idservice),
-        (tables.StateName,
-            tables.StateName.idstatename == tables.State.state),
     ).filter(
-        tables.StateName.statename.in_([u"CRITICAL", u"WARNING", u"UNKNOWN"]),
+        # On ne veut resynchroniser que les états anormaux.
+        ~tables.State.state.in_([state_up, state_ok]),
     ).filter(
         tables.State.timestamp <= time_limit,
     ).filter(
-        ~tables.Host.idhost.in_(hosts_down)
+        tables.Host.idhost.in_(hosts_down)
     )
     return _add_ventilation(lls_to_update)
 
@@ -113,7 +114,7 @@ def get_old_hosts(time_limit):
     """
     Récupère les hôtes à synchroniser.
 
-    Voir le commentaire précédent sur les service pour le critère de
+    Voir le commentaire précédent sur les services pour le critère de
     désynchronisation. La situation est similaire pour les hôtes.
 
     @param time_limit: Date après laquelle on ignore les états.
@@ -122,18 +123,22 @@ def get_old_hosts(time_limit):
         dont l'état est obsolète.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
+    # Les hôtes OK/UP ne nous intéressent pas.
+    # Un hôte peut être "OK" si un exploitant a "Forcé à fermer"
+    # une alarme portant sur cet hôte.
+    state_up = tables.StateName.statename_to_value(u'UP')
+    state_ok = tables.StateName.statename_to_value(u'OK')
+
     q = DBSession.query(
         tables.Host.name.label('hostname'),
         # pour faire une UNION il faut le même nombre de colonnes
         expr_null().label('servicename'),
         tables.VigiloServer.name.label("vigiloserver"),
     ).join(
-        (tables.State,
-            tables.State.idsupitem == tables.Host.idhost),
-        (tables.StateName,
-            tables.StateName.idstatename == tables.State.state),
+        (tables.State, tables.State.idsupitem == tables.Host.idhost),
     ).filter(
-        tables.StateName.statename == u"DOWN"
+        # On ne veut resynchroniser que les états anormaux.
+        ~tables.State.state.in_([state_up, state_ok])
     ).filter(
         tables.State.timestamp <= time_limit
     )
@@ -148,6 +153,24 @@ def get_desync_event_services():
         dont l'état ne correspond pas au dernier événement stocké.
     @rtype: C{sqlalchemy.orm.query.Query}
     """
+    # Les hôtes OK/UP ne nous intéressent pas.
+    # Un hôte peut être "OK" si un exploitant a "Forcé à fermer"
+    # une alarme portant sur cet hôte.
+    state_up = tables.StateName.statename_to_value(u'UP')
+    state_ok = tables.StateName.statename_to_value(u'OK')
+
+    # On récupère d'abord les hôtes DOWN/UNREACHABLE pour pouvoir ne remonter
+    # que les services désynchronisés sur les hôtes OK/UP (#727)
+    # Un hôte peut être "OK" si un exploitant a "Forcé à fermer"
+    # une alarme portant sur cet hôte.
+    hosts_down = DBSession.query(
+        tables.Host.idhost,
+    ).join(
+        (tables.State, tables.State.idsupitem == tables.Host.idhost),
+    ).filter(
+        tables.State.state.in_([state_up, state_ok]),
+    )
+
     q = DBSession.query(
         tables.Host.name.label('hostname'),
         tables.LowLevelService.servicename.label('servicename'),
@@ -161,13 +184,15 @@ def get_desync_event_services():
             tables.Event.idsupitem == tables.State.idsupitem),
     ).filter(
         tables.State.state != tables.Event.current_state
+    ).filter(
+        tables.Host.idhost.in_(hosts_down)
     )
     return _add_ventilation(q)
 
 
 def get_desync_event_hosts():
     """
-    Récupère les hôtes dont l'état et les événements sont désynchronisés
+    Récupère les hôtes dont l'état et les événements sont désynchronisés.
 
     @return: Requête SQL permettant de récupérer la liste des hôtes
         dont l'état ne correspond pas au dernier événement stocké.
