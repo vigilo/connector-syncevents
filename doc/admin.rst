@@ -41,20 +41,38 @@ Configuration spécifique au connecteur syncevents
 Le connecteur syncevents dispose de quelques options de configuration
 spécifiques, détaillées ci-dessous.
 
-Seuil pour l'envoi de demandes d'état
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-L'option ``minutes_old`` détermine l'âge minimum d'une alerte (en minutes),
-au-dessous duquel on ne demande pas de mise à jour à Nagios. Vigilo configure
-Nagios pour que des notifications soient réémises toutes les 30 minutes,
-il faut donc régler ici une valeur légèrement supérieure, pour ne cibler
-que les états désynchronisés.
+Seuils pour l'envoi des demandes d'état
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+L'option ``minutes_old`` détermine l'âge minimum (en minutes) d'une alerte
+ou d'un état portant sur un hôte ou un service de bas niveau
+au-dessus duquel on demande une mise à jour à Nagios.
 
-La valeur par défaut est 35 minutes.
+Nagios est configuré pour ré-émettre des notifications toutes les 30 minutes
+pour les hôtes et les services de bas niveau. Il faut donc régler ici
+une valeur légèrement supérieure, pour ne cibler que les états désynchronisés.
+
+La valeur par défaut est 45 minutes.
 
 .. warning::
-    Si cette valeur ou la fréquence des réémissions de notifications dans Nagios
-    doivent être modifiées, il faut faire attention à toujours garder les deux
-    en cohérence.
+    Cette valeur doit être cohérente avec la fréquence des réémissions
+    de notifications configurées dans Nagios pour les alertes sur les hôtes
+    et les services de bas niveau.
+
+L'option ``hls_minutes_old`` détermine l'âge minimum d'un état (en minutes)
+portant sur un service de haut niveau au-dessus duquel on demande
+une mise à jour à Nagios. Elle sert également pour initialiser les services
+de haut niveau.
+
+Nagios est configuré pour ré-émettre des notifications toutes les 30 minutes
+pour les services de haut niveau. Il faut donc régler ici une valeur
+légèrement supérieure, pour ne cibler que les états désynchronisés.
+
+La valeur par défaut est 45 minutes.
+
+.. warning::
+    Cette valeur doit être cohérente avec la fréquence des réémissions
+    de notifications configurées dans Nagios pour les alertes sur les
+    services de haut niveau.
 
 Emplacement du fichier de verrou
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

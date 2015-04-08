@@ -1,15 +1,15 @@
 # Translations template for vigilo-connector-syncevents.
-# Copyright (C) 2011 ORGANIZATION
+# Copyright (C) 2015 ORGANIZATION
 # This file is distributed under the same license as the
 # vigilo-connector-syncevents project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2011.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: vigilo-connector-syncevents 2.0.0\n"
+"Project-Id-Version: vigilo-connector-syncevents 3.5\n"
 "Report-Msgid-Bugs-To: contact@projet-vigilo.org\n"
-"POT-Creation-Date: 2011-03-16 18:07+0100\n"
+"POT-Creation-Date: 2015-04-16 16:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,36 +18,40 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.4\n"
 
-#: src/vigilo/connector_syncevents/main.py:46
+#: src/vigilo/connector_syncevents/main.py:288
 #, python-format
 msgid "Listing events in the database older than %s"
 msgstr ""
 
-#: src/vigilo/connector_syncevents/main.py:88
+#: src/vigilo/connector_syncevents/main.py:310
 #, python-format
 msgid "Database exception raised: %s"
 msgstr ""
 
-#: src/vigilo/connector_syncevents/main.py:132
+#: src/vigilo/connector_syncevents/main.py:366
+#: src/vigilo/connector_syncevents/main.py:435
 #, python-format
-msgid "Asking update for service \"%(service)s\" on host \"%(host)s\""
+msgid "Asking for update on service \"%(service)s\""
 msgstr ""
 
-#: src/vigilo/connector_syncevents/main.py:139
+#: src/vigilo/connector_syncevents/main.py:372
+#: src/vigilo/connector_syncevents/main.py:438
 #, python-format
-msgid "Asking update for host \"%(host)s\""
+msgid "Asking for update on service \"%(service)s\" on host \"%(host)s\""
 msgstr ""
 
-#: src/vigilo/connector_syncevents/main.py:191
+#: src/vigilo/connector_syncevents/main.py:379
+#: src/vigilo/connector_syncevents/main.py:443
+#, python-format
+msgid "Asking for update on host \"%(host)s\""
+msgstr ""
+
+#: src/vigilo/connector_syncevents/main.py:428
 msgid "No events to synchronize"
 msgstr ""
 
-#: src/vigilo/connector_syncevents/main.py:193
+#: src/vigilo/connector_syncevents/main.py:430
 #, python-format
 msgid "Found %d event(s) to synchronize"
-msgstr ""
-
-#: src/vigilo/connector_syncevents/main.py:204
-msgid "Done sending notification requests"
 msgstr ""
 

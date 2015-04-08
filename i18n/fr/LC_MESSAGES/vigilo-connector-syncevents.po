@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: vigilo-connector-syncevents 2.0.0\n"
 "Report-Msgid-Bugs-To: contact@projet-vigilo.org\n"
 "POT-Creation-Date: 2011-03-15 22:53+0100\n"
-"PO-Revision-Date: 2011-03-16 18:07+0100\n"
+"PO-Revision-Date: 2015-04-16 16:14+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n > 1)\n"
@@ -18,38 +18,42 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.4\n"
 
-#: src/vigilo/connector_syncevents/main.py:46
+#: src/vigilo/connector_syncevents/main.py:288
 #, python-format
 msgid "Listing events in the database older than %s"
 msgstr "Récupération des évènements plus vieux que %s dans la base de données"
 
-#: src/vigilo/connector_syncevents/main.py:88
+#: src/vigilo/connector_syncevents/main.py:310
 #, python-format
 msgid "Database exception raised: %s"
 msgstr "Exception dans la base de données : %s"
 
-#: src/vigilo/connector_syncevents/main.py:132
+#: src/vigilo/connector_syncevents/main.py:366
+#: src/vigilo/connector_syncevents/main.py:435
 #, python-format
-msgid "Asking update for service \"%(service)s\" on host \"%(host)s\""
+msgid "Asking for update on service \"%(service)s\""
+msgstr "Demande de mise à jour pour le service \"%(service)s\""
+
+#: src/vigilo/connector_syncevents/main.py:372
+#: src/vigilo/connector_syncevents/main.py:438
+#, python-format
+msgid "Asking for update on service \"%(service)s\" on host \"%(host)s\""
 msgstr ""
-"Demande d'une mise à jour pour le service \"%(service)s\" sur l'hôte "
+"Demande de mise à jour pour le service \"%(service)s\" de l'hôte "
 "\"%(host)s\""
 
-#: src/vigilo/connector_syncevents/main.py:139
+#: src/vigilo/connector_syncevents/main.py:379
+#: src/vigilo/connector_syncevents/main.py:443
 #, python-format
-msgid "Asking update for host \"%(host)s\""
-msgstr "Demande d'une mise à jour pour l'hôte \"%(host)s\""
+msgid "Asking for update on host \"%(host)s\""
+msgstr "Demande de mise à jour pour l'hôte \"%(host)s\""
 
-#: src/vigilo/connector_syncevents/main.py:191
+#: src/vigilo/connector_syncevents/main.py:428
 msgid "No events to synchronize"
 msgstr "Pas d'évènement à synchroniser"
 
-#: src/vigilo/connector_syncevents/main.py:193
+#: src/vigilo/connector_syncevents/main.py:430
 #, python-format
 msgid "Found %d event(s) to synchronize"
 msgstr "Il y a %d évènements à synchroniser"
-
-#: src/vigilo/connector_syncevents/main.py:204
-msgid "Done sending notification requests"
-msgstr "Demandes de notification envoyées"
 

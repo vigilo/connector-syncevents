@@ -57,7 +57,7 @@ def _add_ventilation(query):
             )
 
 
-def get_old_services(time_limit):
+def get_old_lls(time_limit):
     """
     Récupère les services à synchroniser.
 
@@ -143,6 +143,49 @@ def get_old_hosts(time_limit):
         tables.State.timestamp <= time_limit
     )
     return _add_ventilation(q)
+
+
+def get_old_hls(hls_time_limit):
+    """
+    Récupère les services de haut niveau à synchroniser.
+
+    On configure Nagios pour renvoyer l'état des services de haut niveau
+    non-OK toutes les X minutes. L'état est alors mis à jour dans la base.
+    Donc si on trouve un état dans la base qui n'a pas été mis à jour
+    il y a moins de X minutes, c'est potentiellement un message perdu
+    donc un service à re-synchroniser.
+
+    La resynchronisation permet aussi d'initialiser proprement
+    les services de haut niveau côté Vigilo lorsqu'ils sont
+    dans un état nominal côté Nagios.
+
+    @param hls_time_limit: Date après laquelle on ignore les états.
+    @type  hls_time_limit: C{datetime.datetime}
+    @return: Requête SQL permettant de récupérer la liste des services
+        de haut niveau dont l'état est obsolète.
+    @rtype: C{sqlalchemy.orm.query.Query}
+    """
+    # On force Nagios à envoyer une notification pour les états suivants :
+    # OK : état nominal; Nagios n'émet pas de notification dans ce cas,
+    #      mais on a besoin de l'information pour éviter des incohérences.
+    # UNKNOWN : état initial des HLS dans Nagios. Donc il n'enverra pas
+    #           de notification à Vigilo si le service est toujours UNKNOWN
+    #           après la première vérification.
+    state_ok = tables.StateName.statename_to_value(u'OK')
+    state_unknown = tables.StateName.statename_to_value(u'UNKNOWN')
+
+    q = DBSession.query(
+        expr_null().label('hostname'),
+        tables.HighLevelService.servicename,
+        expr_null().label('vigiloserver'),
+    ).select_from(
+        tables.HighLevelService
+    ).join(
+        (tables.State,
+            tables.State.idsupitem == tables.HighLevelService.idservice),
+    ).filter(tables.State.state.in_([state_ok, state_unknown])
+    ).filter(tables.State.timestamp <= hls_time_limit)
+    return q
 
 
 def get_desync_event_services():
@@ -231,12 +274,17 @@ def keep_only_open_correvents(req):
             tables.CorrEvent.ack != tables.CorrEvent.ACK_CLOSED
         )
 
-def get_desync(time_limit, max_events=0):
+
+def get_desync(time_limit, hls_time_limit, max_events=0):
     """
     Retourne les hôtes/services à synchroniser.
 
-    @param time_limit: Date après laquelle on ignore les évènements.
+    @param time_limit: Date après laquelle on ignore les évènements
+        en ce qui concerne les hôtes et les services de bas niveau.
     @type  time_limit: C{datetime.datetime}
+    @param hls_time_limit: Date après laquelle on ignore les évènements
+        pour les services de haut niveau.
+    @type  hls_time_limit: C{datetime.datetime}
     @param max_events: Nombre maximum d'éléments.
     @type  max_events: C{int}
     @return: Liste d'hôtes/services à synchroniser
@@ -247,14 +295,16 @@ def get_desync(time_limit, max_events=0):
     LOGGER.info(_("Listing events in the database older than %s"),
                  time_limit.strftime("%Y-%m-%d %H:%M:%S"))
 
-    lls_old = get_old_services(time_limit)
+    lls_old = get_old_lls(time_limit)
     hosts_old = get_old_hosts(time_limit)
+    hls_old = get_old_hls(hls_time_limit)
     lls_events = keep_only_open_correvents(get_desync_event_services())
     hosts_events = keep_only_open_correvents(get_desync_event_hosts())
 
     to_update = union(
         lls_old, hosts_old,
         lls_events, hosts_events,
+        hls_old,
         correlate=False
     )
 
@@ -311,20 +361,30 @@ class SyncSender(object):
         """
         msg = { "type": "nagios",
                 "timestamp": int(time.time()),
-                "routing_key": supitem.vigiloserver,
                 }
-        if supitem.servicename:
+
+        if supitem.vigiloserver:
+            msg['routing_key'] = supitem.vigiloserver
+
+        if not supitem.hostname:
+            msg["cmdname"] = "SEND_CUSTOM_SVC_NOTIFICATION"
+            msg["value"] = ("High-Level-Services;%s;0;vigilo;syncevents"
+                         % (supitem.servicename, ))
+            LOGGER.debug(
+                _("Asking for update on high-level service \"%(service)s\""),
+                {"service": supitem.servicename})
+        elif supitem.servicename:
             msg["cmdname"] = "SEND_CUSTOM_SVC_NOTIFICATION"
             msg["value"] = ("%s;%s;0;vigilo;syncevents"
                          % (supitem.hostname, supitem.servicename))
-            LOGGER.debug(_("Asking update for service \"%(service)s\" "
+            LOGGER.debug(_("Asking for update on service \"%(service)s\" "
                            "on host \"%(host)s\""),
                          {"host": supitem.hostname,
                           "service": supitem.servicename})
         else:
             msg["cmdname"] = "SEND_CUSTOM_HOST_NOTIFICATION"
             msg["value"] = "%s;0;vigilo;syncevents" % supitem.hostname
-            LOGGER.debug(_("Asking update for host \"%(host)s\""),
+            LOGGER.debug(_("Asking for update on host \"%(host)s\""),
                          {"host": supitem.hostname})
         return msg
 
@@ -352,18 +412,26 @@ def main():
     if not lock_result:
         sys.exit(1)
 
-    # Récupération des événements corrélés dont la priorité et la
-    # durée de consolidation sont supérieures à celles configurées.
+    # Récupération des événements corrélés dont la durée
+    # de consolidation sont supérieures à celles configurées.
     try:
         minutes_old = int(settings['connector-syncevents']["minutes_old"])
     except KeyError:
         minutes_old = 35
-    time_limit = datetime.now() - timedelta(minutes=int(minutes_old))
+
+    try:
+        hls_minutes_old = int(settings['connector-syncevents']["hls_minutes_old"])
+    except KeyError:
+        hls_minutes_old = 35
+
+    now = datetime.now()
+    time_limit = now - timedelta(minutes=int(minutes_old))
+    hls_time_limit = now - timedelta(minutes=int(hls_minutes_old))
     try:
         max_events = int(settings['connector-syncevents']["max_events"])
     except KeyError:
         max_events = 0
-    events = get_desync(time_limit, max_events)
+    events = get_desync(time_limit, hls_time_limit, max_events)
     if not events:
         LOGGER.info(_("No events to synchronize"))
         return # rien à faire
@@ -371,13 +439,17 @@ def main():
 
     if opts.dry_run:
         for supitem in events:
-            if supitem.servicename:
-                LOGGER.debug(_("Asking update for service \"%(service)s\" "
+            if not supitem.hostname:
+                LOGGER.debug(
+                    _("Asking for update on high-level service \"%(service)s\""),
+                    {"service": supitem.servicename})
+            elif supitem.servicename:
+                LOGGER.debug(_("Asking for update on service \"%(service)s\" "
                                "on host \"%(host)s\""),
                              {"host": supitem.hostname,
                               "service": supitem.servicename})
             else:
-                LOGGER.debug(_("Asking update for host \"%(host)s\""),
+                LOGGER.debug(_("Asking for update on host \"%(host)s\""),
                              {"host": supitem.hostname})
         return
 
@@ -389,6 +461,5 @@ def main():
 
     bus_publisher = buspublisher_factory(settings, osc.client)
     syncsender.publisher = bus_publisher
-    #bus_publisher.registerProducer(syncsender, streaming=True)
 
     return osc.run(log_traffic=log_traffic)

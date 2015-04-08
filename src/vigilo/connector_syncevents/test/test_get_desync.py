@@ -60,7 +60,7 @@ class TestRequest(unittest.TestCase):
     def test_no_events(self):
         """Pas d'évènements"""
         time_limit = datetime.now() - timedelta(minutes=42)
-        self.assertEqual(get_desync(time_limit), [])
+        self.assertEqual(get_desync(time_limit, time_limit), [])
 
     def test_age_younger_host(self):
         """Évènements trop récents sur un hôte"""
@@ -71,7 +71,7 @@ class TestRequest(unittest.TestCase):
         time_limit = now - timedelta(minutes=20)
         df.add_host_state(host, "DOWN", timestamp=age)
         DBSession.flush()
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         self.assertEqual(len(results), 0)
 
     def test_age_equal_host(self):
@@ -82,7 +82,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=20)
         time_limit = age
         df.add_host_state(host, "DOWN", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
@@ -96,7 +96,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=21)
         time_limit = now - timedelta(minutes=20)
         df.add_host_state(host, "DOWN", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, None)
@@ -111,7 +111,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=19)
         time_limit = now - timedelta(minutes=20)
         df.add_svc_state(svc, "CRITICAL", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 0)
 
@@ -124,7 +124,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=20)
         time_limit = age
         df.add_svc_state(svc, "CRITICAL", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
         self.assertEqual(results[0].servicename, "testsvc")
@@ -139,7 +139,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=21)
         time_limit = now - timedelta(minutes=20)
         df.add_svc_state(svc, "CRITICAL", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -154,7 +154,7 @@ class TestRequest(unittest.TestCase):
         age = now - timedelta(minutes=42)
         df.add_host_state(host, "DOWN", timestamp=age)
         DBSession.flush()
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -168,7 +168,7 @@ class TestRequest(unittest.TestCase):
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_host_state(host, "UP", timestamp=age)
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 0)
 
@@ -180,7 +180,7 @@ class TestRequest(unittest.TestCase):
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_svc_state(svc, "CRITICAL", timestamp=age)
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -195,7 +195,7 @@ class TestRequest(unittest.TestCase):
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_svc_state(svc, "WARNING", timestamp=age)
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -210,7 +210,7 @@ class TestRequest(unittest.TestCase):
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_svc_state(svc, "UNKNOWN", timestamp=age)
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -225,7 +225,7 @@ class TestRequest(unittest.TestCase):
         now = datetime.now()
         age = now - timedelta(minutes=42)
         df.add_svc_state(svc, "OK", timestamp=age)
-        results = get_desync(now)
+        results = get_desync(now, now)
         print results
         self.assertEqual(len(results), 0)
 
@@ -239,7 +239,7 @@ class TestRequest(unittest.TestCase):
         time_limit = now - timedelta(minutes=20)
         df.add_host_state(host, "DOWN", timestamp=now)
         df.add_svc_state(svc, "UNKNOWN", timestamp=age)
-        results = get_desync(time_limit)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 0)
 
@@ -252,7 +252,7 @@ class TestRequest(unittest.TestCase):
             df.add_host_state(host, "DOWN", timestamp=age)
             df.add_ventilation(host, "collector", "nagios")
         DBSession.flush()
-        results = get_desync(now, 2)
+        results = get_desync(now, now, 2)
         print results
         self.assertEqual(len(results), 2)
 
@@ -272,7 +272,8 @@ class TestRequest(unittest.TestCase):
         # un où il ne l'est pas.
         df.add_correvent([e, e_normal])
         df.add_correvent([e_normal, e])
-        results = get_desync(datetime.now() - timedelta(minutes=42))
+        time_limit = datetime.now() - timedelta(minutes=42)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -294,7 +295,8 @@ class TestRequest(unittest.TestCase):
         # il ne l'est pas.
         df.add_correvent([e, e_normal])
         df.add_correvent([e_normal, e])
-        results = get_desync(datetime.now() - timedelta(minutes=42))
+        time_limit = datetime.now() - timedelta(minutes=42)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].hostname, "testhost")
@@ -316,7 +318,8 @@ class TestRequest(unittest.TestCase):
         # un où il ne l'est pas.
         df.add_correvent([e, e_normal], status=tables.CorrEvent.ACK_CLOSED)
         df.add_correvent([e_normal, e], status=tables.CorrEvent.ACK_CLOSED)
-        results = get_desync(datetime.now() - timedelta(minutes=42))
+        time_limit = datetime.now() - timedelta(minutes=42)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 0)
 
@@ -327,6 +330,62 @@ class TestRequest(unittest.TestCase):
         df.add_host_state(host, "UP")
         e = df.add_event(host, "DOWN", "dummy")
         df.add_correvent([e], status=tables.CorrEvent.ACK_CLOSED)
-        results = get_desync(datetime.now() - timedelta(minutes=42))
+        time_limit = datetime.now() - timedelta(minutes=42)
+        results = get_desync(time_limit, time_limit)
         print results
         self.assertEqual(len(results), 0)
+
+    def test_hls_state_critical(self):
+        """État CRITICAL sur un Service de Haut Niveau"""
+        svc = df.add_highlevelservice("testsvc")
+        svc2 = df.add_highlevelservice("testsvc2")
+        now = datetime.now()
+        age = now - timedelta(minutes=42)
+        df.add_svc_state(svc, "CRITICAL", timestamp=age)
+        df.add_svc_state(svc2, "CRITICAL", timestamp=now)
+        results = get_desync(age, age)
+        print results
+        self.assertEqual(len(results), 0)
+
+    def test_hls_state_warning(self):
+        """État WARNING sur un Service de Haut Niveau"""
+        svc = df.add_highlevelservice("testsvc")
+        svc2 = df.add_highlevelservice("testsvc2")
+        now = datetime.now()
+        age = now - timedelta(minutes=42)
+        df.add_svc_state(svc, "WARNING", timestamp=age)
+        df.add_svc_state(svc2, "WARNING", timestamp=now)
+        results = get_desync(age, age)
+        print results
+        self.assertEqual(len(results), 0)
+
+    def test_hls_state_unknown(self):
+        """État UNKNOWN sur un Service de Haut Niveau"""
+        svc = df.add_highlevelservice("testsvc")
+        svc2 = df.add_highlevelservice("testsvc2")
+        now = datetime.now()
+        age = now - timedelta(minutes=42)
+        df.add_svc_state(svc, "UNKNOWN", timestamp=age)
+        df.add_svc_state(svc2, "UNKNOWN", timestamp=now)
+        results = get_desync(age, age)
+        print results
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].hostname, None)
+        self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, None)
+
+    def test_hls_state_ok(self):
+        """État OK sur un Service de Haut Niveau"""
+        svc = df.add_highlevelservice("testsvc")
+        svc2 = df.add_highlevelservice("testsvc2")
+        now = datetime.now()
+        age = now - timedelta(minutes=42)
+        df.add_svc_state(svc, "OK", timestamp=age)
+        df.add_svc_state(svc2, "OK", timestamp=now)
+        results = get_desync(age, age)
+        print results
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].hostname, None)
+        self.assertEqual(results[0].servicename, "testsvc")
+        self.assertEqual(results[0].vigiloserver, None)
+
