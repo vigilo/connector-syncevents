@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vigilo-connector-syncevents 3.5\n"
 "Report-Msgid-Bugs-To: contact@projet-vigilo.org\n"
-"POT-Creation-Date: 2015-04-16 16:14+0200\n"
-"PO-Revision-Date: 2015-04-16 16:14+0200\n"
+"POT-Creation-Date: 2015-05-11 18:45+0200\n"
+"PO-Revision-Date: 2015-05-11 18:45+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
@@ -18,39 +18,44 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 0.9.4\n"
 
-#: src/vigilo/connector_syncevents/main.py:288
+#: src/vigilo/connector_syncevents/main.py:302
 #, python-format
-msgid "Listing events in the database older than %s"
-msgstr "Listing events in the database older than %s"
+msgid "Listing hosts/services states older than %s"
+msgstr "Listing hosts/services states older than %s"
 
-#: src/vigilo/connector_syncevents/main.py:310
+#: src/vigilo/connector_syncevents/main.py:311
+#, python-format
+msgid "Listing high-level services states older than %s"
+msgstr "Listing high-level services states older than %s"
+
+#: src/vigilo/connector_syncevents/main.py:325
 #, python-format
 msgid "Database exception raised: %s"
 msgstr "Database exception raised: %s"
 
-#: src/vigilo/connector_syncevents/main.py:366
-#: src/vigilo/connector_syncevents/main.py:435
+#: src/vigilo/connector_syncevents/main.py:382
+#: src/vigilo/connector_syncevents/main.py:460
 #, python-format
-msgid "Asking for update on service \"%(service)s\""
-msgstr "Asking for update on service \"%(service)s\""
+msgid "Asking for update on high-level service \"%(service)s\""
+msgstr "Asking for update on high-level service \"%(service)s\""
 
-#: src/vigilo/connector_syncevents/main.py:372
-#: src/vigilo/connector_syncevents/main.py:438
+#: src/vigilo/connector_syncevents/main.py:388
+#: src/vigilo/connector_syncevents/main.py:463
 #, python-format
 msgid "Asking for update on service \"%(service)s\" on host \"%(host)s\""
 msgstr "Asking for update on service \"%(service)s\" on host \"%(host)s\""
 
-#: src/vigilo/connector_syncevents/main.py:379
-#: src/vigilo/connector_syncevents/main.py:443
+#: src/vigilo/connector_syncevents/main.py:395
+#: src/vigilo/connector_syncevents/main.py:468
 #, python-format
 msgid "Asking for update on host \"%(host)s\""
 msgstr "Asking for update on host \"%(host)s\""
 
-#: src/vigilo/connector_syncevents/main.py:428
+#: src/vigilo/connector_syncevents/main.py:452
 msgid "No events to synchronize"
 msgstr "No events to synchronize"
 
-#: src/vigilo/connector_syncevents/main.py:430
+#: src/vigilo/connector_syncevents/main.py:454
 #, python-format
 msgid "Found %d event(s) to synchronize"
 msgstr "Found %d event(s) to synchronize"
