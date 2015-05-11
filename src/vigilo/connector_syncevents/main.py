@@ -279,12 +279,15 @@ def get_desync(time_limit, hls_time_limit, max_events=0):
     """
     Retourne les hôtes/services à synchroniser.
 
-    @param time_limit: Date après laquelle on ignore les évènements
+    @param time_limit: Date après laquelle on ignore les états
         en ce qui concerne les hôtes et les services de bas niveau.
-    @type  time_limit: C{datetime.datetime}
-    @param hls_time_limit: Date après laquelle on ignore les évènements
-        pour les services de haut niveau.
-    @type  hls_time_limit: C{datetime.datetime}
+        Passer la valeur C{None} pour désactiver cette partie
+        de la resynchronisation.
+    @type  time_limit: C{datetime.datetime} or C{None}
+    @param hls_time_limit: Date après laquelle on ignore les états
+        pour les services de haut niveau. Passer la valeur C{None}
+        pour désactiver cette partie de la resynchronisation.
+    @type  hls_time_limit: C{datetime.datetime} or C{None}
     @param max_events: Nombre maximum d'éléments.
     @type  max_events: C{int}
     @return: Liste d'hôtes/services à synchroniser
@@ -292,22 +295,27 @@ def get_desync(time_limit, hls_time_limit, max_events=0):
 
     @todo: récupérer aussi l'adresse du serveur nagios dans la ventilation
     """
-    LOGGER.info(_("Listing events in the database older than %s"),
-                 time_limit.strftime("%Y-%m-%d %H:%M:%S"))
+    resync = []
 
-    lls_old = get_old_lls(time_limit)
-    hosts_old = get_old_hosts(time_limit)
-    hls_old = get_old_hls(hls_time_limit)
-    lls_events = keep_only_open_correvents(get_desync_event_services())
-    hosts_events = keep_only_open_correvents(get_desync_event_hosts())
+    if time_limit is not None:
+        # Resynchronisation des états des LLS/hosts.
+        LOGGER.info(_("Listing hosts/services states older than %s"),
+                     time_limit.strftime("%Y-%m-%d %H:%M:%S"))
+        resync.extend([
+            get_old_lls(time_limit),
+            get_old_hosts(time_limit),
+        ])
 
-    to_update = union(
-        lls_old, hosts_old,
-        lls_events, hosts_events,
-        hls_old,
-        correlate=False
-    )
+    if hls_time_limit is not None:
+        # Resynchronisation des états des HLS.
+        LOGGER.info(_("Listing high-level services states older than %s"),
+                     hls_time_limit.strftime("%Y-%m-%d %H:%M:%S"))
+        resync.append(get_old_hls(hls_time_limit))
 
+    resync.append(keep_only_open_correvents(get_desync_event_services()))
+    resync.append(keep_only_open_correvents(get_desync_event_hosts()))
+
+    to_update = union(*resync, correlate=False)
     if max_events:
         to_update = to_update.limit(max_events)
 
@@ -417,16 +425,24 @@ def main():
     try:
         minutes_old = int(settings['connector-syncevents']["minutes_old"])
     except KeyError:
-        minutes_old = 35
+        minutes_old = 45
 
     try:
         hls_minutes_old = int(settings['connector-syncevents']["hls_minutes_old"])
     except KeyError:
-        hls_minutes_old = 35
+        hls_minutes_old = -1
 
     now = datetime.now()
-    time_limit = now - timedelta(minutes=int(minutes_old))
-    hls_time_limit = now - timedelta(minutes=int(hls_minutes_old))
+    if minutes_old < 0:
+        time_limit = None
+    else:
+        time_limit = now - timedelta(minutes=int(minutes_old))
+
+    if hls_minutes_old < 0:
+        hls_time_limit = None
+    else:
+        hls_time_limit = now - timedelta(minutes=int(hls_minutes_old))
+
     try:
         max_events = int(settings['connector-syncevents']["max_events"])
     except KeyError:

@@ -51,6 +51,7 @@ Nagios est configuré pour ré-émettre des notifications toutes les 30 minutes
 pour les hôtes et les services de bas niveau. Il faut donc régler ici
 une valeur légèrement supérieure, pour ne cibler que les états désynchronisés.
 
+Une valeur négative désactive cette resynchronisation.
 La valeur par défaut est 45 minutes.
 
 .. warning::
@@ -60,17 +61,20 @@ La valeur par défaut est 45 minutes.
 
 L'option ``hls_minutes_old`` détermine l'âge minimum d'un état (en minutes)
 portant sur un service de haut niveau au-dessus duquel on demande
-une mise à jour à Nagios. Elle sert également pour initialiser les services
-de haut niveau.
+une mise à jour à Nagios. Elle sert également à initialiser les services
+de haut niveau plus rapidement, en contrepartie d'une dégradation
+des performances générales de Vigilo.
 
 Nagios est configuré pour ré-émettre des notifications toutes les 30 minutes
 pour les services de haut niveau. Il faut donc régler ici une valeur
 légèrement supérieure, pour ne cibler que les états désynchronisés.
 
-La valeur par défaut est 45 minutes.
+Une valeur négative désactive cette resynchronisation.
+La valeur par défaut est -1 (ie. la resynchronisation est désactivée).
 
 .. warning::
-    Cette valeur doit être cohérente avec la fréquence des réémissions
+    Si la resynchronisation des services de haut niveau est souhaitée,
+    cette valeur doit être cohérente avec la fréquence des réémissions
     de notifications configurées dans Nagios pour les alertes sur les
     services de haut niveau.
 
