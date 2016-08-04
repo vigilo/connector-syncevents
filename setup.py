@@ -75,4 +75,3 @@ setup(name='vigilo-connector-syncevents',
                     (os.path.join(localstatedir, "lock/subsys/vigilo-connector-syncevents"), []),
                    ] + install_i18n("i18n", os.path.join(sys.prefix, "share", "locale")),
         )
-
