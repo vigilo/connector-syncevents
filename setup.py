@@ -71,7 +71,8 @@ setup(name='vigilo-connector-syncevents',
                         ["settings.ini"]),
                     (os.path.join(sysconfdir, "cron.d"),
                         ["pkg/vigilo-connector-syncevents%s" % cronext]),
-                    (os.path.join(localstatedir, "lock/vigilo-connector-syncevents"), []),
+                    (os.path.join(localstatedir, "lock/subsys"), []),
+                    (os.path.join(localstatedir, "lock/subsys/vigilo-connector-syncevents"), []),
                    ] + install_i18n("i18n", os.path.join(sys.prefix, "share", "locale")),
         )
 

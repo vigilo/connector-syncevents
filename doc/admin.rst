@@ -85,7 +85,7 @@ l'exécution simultanée de plusieurs instances du connecteur.
 
 L'option ``lockfile`` peut être utilisée pour spécifier l'emplacement du
 fichier de verrou à créer. L'emplacement par défaut de ce fichier de verrou
-est ``/var/lock/vigilo-connector-syncevents/lock``.
+est ``/var/lock/subsys/vigilo-connector-syncevents/lock``.
 
 Limite sur le nombre de demandes d'état
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

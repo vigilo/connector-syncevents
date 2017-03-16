@@ -415,7 +415,7 @@ def main():
 
     # Lock
     lockfile = settings["connector-syncevents"].get("lockfile",
-                        "/var/lock/vigilo-connector-syncevents/lock")
+                        "/var/lock/subsys/vigilo-connector-syncevents/lock")
     lock_result = grab_lock(lockfile)
     if not lock_result:
         sys.exit(1)

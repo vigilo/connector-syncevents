@@ -69,4 +69,4 @@ rm -rf $RPM_BUILD_ROOT
 %attr(640,root,vigilo-syncevents) %config(noreplace) %{_sysconfdir}/vigilo/%{module}/settings.ini
 %attr(644,root,root) %config(noreplace) %{_sysconfdir}/cron.d/*
 %{python_sitelib}/vigilo*
-%attr(-,vigilo-syncevents,vigilo-syncevents) %{_localstatedir}/lock/vigilo-connector-syncevents
+%attr(-,vigilo-syncevents,vigilo-syncevents) %{_localstatedir}/lock/subsys/vigilo-connector-syncevents
