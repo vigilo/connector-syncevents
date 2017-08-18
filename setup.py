@@ -35,8 +35,8 @@ def install_i18n(i18ndir, destdir):
 setup(name='vigilo-connector-syncevents',
         version='4.1.0rc1',
         author='Vigilo Team',
-        author_email='contact@projet-vigilo.org',
-        url='http://www.projet-vigilo.org/',
+        author_email='contact.vigilo@c-s.fr',
+        url='http://www.vigilo-nms.com/',
         description="Vigilo events syncer",
         long_description="Update event states in the Vigilo database "
                          "by asking Nagios.",
