@@ -321,7 +321,7 @@ def get_desync(time_limit, hls_time_limit, max_events=0):
 
     try:
         return DBSession.query(to_update.alias()).all()
-    except (InvalidRequestError, OperationalError), e:
+    except (InvalidRequestError, OperationalError) as e:
         LOGGER.error(_('Database exception raised: %s'),
                         get_error_message(e))
         raise e
