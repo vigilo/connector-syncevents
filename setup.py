@@ -36,7 +36,7 @@ setup(name='vigilo-connector-syncevents',
         version='4.1.0',
         author='Vigilo Team',
         author_email='contact.vigilo@c-s.fr',
-        url='http://www.vigilo-nms.com/',
+        url='https://www.vigilo-nms.com/',
         description="Vigilo events syncer",
         long_description="Update event states in the Vigilo database "
                          "by asking Nagios.",
