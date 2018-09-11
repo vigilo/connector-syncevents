@@ -4,7 +4,7 @@ Name:       vigilo-%{module}
 Summary:    @SUMMARY@
 Version:    @VERSION@
 Release:    @RELEASE@%{?dist}
-Source0:    %{name}-%{version}.tar.gz
+Source0:    %{name}-%{version}@PREVERSION@.tar.gz
 URL:        @URL@
 Group:      Applications/System
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-build
@@ -12,6 +12,8 @@ License:    GPLv2
 Buildarch:  noarch
 
 BuildRequires:   python-babel
+
+
 
 Requires:   vigilo-common
 Requires:   vigilo-connector
@@ -26,7 +28,7 @@ This application is part of the Vigilo Project <https://www.vigilo-nms.com>
 
 
 %prep
-%setup -q
+%setup -q -n %{name}-%{version}@PREVERSION@
 
 %build
 
