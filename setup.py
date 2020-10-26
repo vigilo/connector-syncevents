@@ -6,9 +6,16 @@
 import os, sys
 from setuptools import setup, find_packages
 
-sysconfdir = os.getenv("SYSCONFDIR", "/etc")
-localstatedir = os.getenv("LOCALSTATEDIR", "/var")
-cronext = os.getenv("CRONEXT", ".cron")
+cmdclass = {}
+try:
+    from vigilo.common.commands import install_data
+except ImportError:
+    pass
+else:
+    cmdclass['install_data'] = install_data
+
+os.environ.setdefault('SYSCONFDIR', '/etc')
+os.environ.setdefault('LOCALSTATEDIR', '/var')
 
 tests_require = [
     'coverage',
@@ -66,13 +73,11 @@ setup(name='vigilo-connector-syncevents',
                 ],
         },
         package_dir={'': 'src'},
+        test_suite='nose.collector',
+        cmdclass=cmdclass,
         data_files=[
-                    (os.path.join(sysconfdir, "vigilo", "connector-syncevents"),
-                        ["settings.ini"]),
-                    (os.path.join(sysconfdir, "cron.d"),
-                        ["pkg/vigilo-connector-syncevents%s" % cronext]),
-                    (os.path.join(localstatedir, "lock/subsys"), []),
-                    (os.path.join(localstatedir, "lock/subsys/vigilo-connector-syncevents"), []),
-                   ] + install_i18n("i18n", os.path.join(sys.prefix, "share", "locale")),
+            (os.path.join("@SYSCONFDIR@", "vigilo", "connector-syncevents"), ["settings.ini.in"]),
+            (os.path.join("@LOCALSTATEDIR@", "log", "vigilo", "connector-syncevents"), []),
+           ] + install_i18n("i18n", os.path.join(sys.prefix, 'share', 'locale')),
         )
 

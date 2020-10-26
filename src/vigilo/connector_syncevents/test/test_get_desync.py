@@ -6,9 +6,12 @@
 Teste la requête à la base de données
 """
 from __future__ import print_function
+
+import os
 import unittest
 from datetime import datetime, timedelta
 
+os.environ['VIGILO_SETTINGS'] = 'settings_tests.ini'
 from vigilo.common.conf import settings
 settings.load_module(__name__)
 from vigilo.models.configure import configure_db
