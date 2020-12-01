@@ -6,16 +6,7 @@
 import os, sys
 from setuptools import setup, find_packages
 
-cmdclass = {}
-try:
-    from vigilo.common.commands import install_data
-except ImportError:
-    pass
-else:
-    cmdclass['install_data'] = install_data
-
-os.environ.setdefault('SYSCONFDIR', '/etc')
-os.environ.setdefault('LOCALSTATEDIR', '/var')
+setup_requires = ['vigilo-common'] if not os.environ.get('CI') else []
 
 tests_require = [
     'coverage',
@@ -49,6 +40,7 @@ setup(name='vigilo-connector-syncevents',
                          "by asking Nagios.",
         license='http://www.gnu.org/licenses/gpl-2.0.html',
         zip_safe=False, # pour pouvoir écrire le dropin.cache de twisted
+        setup_requires=setup_requires,
         install_requires=[
             'setuptools',
             'vigilo-common',
@@ -74,10 +66,19 @@ setup(name='vigilo-connector-syncevents',
         },
         package_dir={'': 'src'},
         test_suite='nose.collector',
-        cmdclass=cmdclass,
+        vigilo_build_vars={
+            'sysconfdir': {
+                'default': '/etc',
+                'description': "installation directory for configuration files",
+            },
+            'localstatedir': {
+                'default': '/var',
+                'description': "local state directory",
+            },
+        },
         data_files=[
-            (os.path.join("@SYSCONFDIR@", "vigilo", "connector-syncevents"), ["settings.ini.in"]),
-            (os.path.join("@LOCALSTATEDIR@", "log", "vigilo", "connector-syncevents"), []),
+            (os.path.join("@sysconfdir@", "vigilo", "connector-syncevents"), ["settings.ini.in"]),
+            (os.path.join("@localstatedir@", "log", "vigilo", "connector-syncevents"), []),
            ] + install_i18n("i18n", os.path.join(sys.prefix, 'share', 'locale')),
         )
 
