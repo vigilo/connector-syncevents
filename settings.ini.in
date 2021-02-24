@@ -49,7 +49,7 @@ max_events = 100
 
 
 [database]
-sqlalchemy_url = postgresql://vigilo:vigilo@localhost/vigilo
+sqlalchemy_url = postgresql://vigilo:vigilo@localhost/vigilo?application_name=vigilo-syncevents
 # Affichage des requetes SQL ou non (pour assister le débogage)
 #sqlalchemy_echo = false
 
